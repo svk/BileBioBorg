@@ -66,7 +66,7 @@ chtype tile_display(struct tile t);
 struct bilebio {
     struct tile stage[STAGE_HEIGHT][STAGE_WIDTH];
     unsigned long stage_level;
-    unsigned long player_x, player_y;
+    int player_x, player_y;
     unsigned long player_score;
     int player_dead;
 };
@@ -76,7 +76,7 @@ void set_stage(struct bilebio *bb);
 enum status update_bilebio(struct bilebio *bb);
 void age_tile(struct bilebio *bb, struct tile *t);
 int move_player(struct bilebio *bb, int dx, int dy);
-int try_to_place(struct bilebio *bb, int deadly, int *tries, unsigned long x, unsigned long y, struct tile t);
+int try_to_place(struct bilebio *bb, int deadly, int *tries, int x, int y, struct tile t);
 
 void set_status(int row, chtype color, const char *fmt, ...);
 
@@ -353,6 +353,7 @@ enum status update_bilebio(struct bilebio *bb)
 
 void age_tile(struct bilebio *bb, struct tile *t)
 {
+    (void)bb;
     if (t->type == TILE_ROOT) {
         t->age++;
         if (t->age >= 80)
@@ -404,7 +405,7 @@ int move_player(struct bilebio *bb, int dx, int dy)
     return 1;
 }
 
-int try_to_place(struct bilebio *bb, int deadly, int *tries, unsigned long x, unsigned long y, struct tile t)
+int try_to_place(struct bilebio *bb, int deadly, int *tries, int x, int y, struct tile t)
 {
     if (IN_BOUNDS(x, y)) {
         if (deadly && bb->stage[y][x].type == TILE_PLAYER) {
