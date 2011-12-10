@@ -1,3 +1,4 @@
+
 #include <assert.h>
 #include <curses.h>
 #include <math.h>
@@ -70,7 +71,7 @@ struct bilebio {
     int player_dead;
 };
 
-int init_bilebio(struct bilebio *bb);
+void init_bilebio(struct bilebio *bb);
 void set_stage(struct bilebio *bb);
 enum status update_bilebio(struct bilebio *bb);
 void age_tile(struct bilebio *bb, struct tile *t);
@@ -78,6 +79,9 @@ int move_player(struct bilebio *bb, int dx, int dy);
 int try_to_place(struct bilebio *bb, int deadly, int *tries, unsigned long x, unsigned long y, struct tile t);
 
 void set_status(int row, chtype color, const char *fmt, ...);
+
+/* Level progression. */
+unsigned long get_num_roots(unsigned long stage_level);
 
 int main(void)
 {
@@ -153,7 +157,7 @@ chtype tile_display(struct tile t)
     return display[t.type] | color[t.type];
 }
 
-int init_bilebio(struct bilebio *bb)
+void init_bilebio(struct bilebio *bb)
 {
     bb->stage_level = 1;
     bb->player_score = 0;
@@ -161,84 +165,10 @@ int init_bilebio(struct bilebio *bb)
     set_stage(bb);
 }
 
-#define NUM_STAGES 3
+#define NUM_STAGES 8
 
 const struct tile stages[NUM_STAGES][STAGE_HEIGHT][STAGE_WIDTH] = {
-
-#define W   {TILE_WALL, 0, 0, 0, 0},
-#define _   {TILE_FLOOR, 0, 0, 0, 0},
-#define F   {TILE_EXIT, 0, 0, 0, 0},
-#define P   {TILE_PLAYER, 0, 0, 0, 0},
-
-{
-{W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W},
-{W _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ W},
-{W _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ W},
-{W _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ W},
-{W _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ W},
-{W _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ W},
-{W _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ W},
-{W _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ W},
-{W _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ W},
-{W _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ F},
-{W P _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ F},
-{W _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ W},
-{W _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ W},
-{W _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ W},
-{W _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ W},
-{W _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ W},
-{W _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ W},
-{W _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ W},
-{W _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ W},
-{W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W},
-},
-
-{
-{W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W},
-{W _ _ _ _ _ _ _ _ _ _ W _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ W W W W _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ W _ _ _ _ _ _ _ _ _ _ W},
-{W _ _ _ _ _ _ _ _ _ _ _ W _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ W _ W W _ W _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ W _ _ _ _ _ _ _ _ _ _ _ W},
-{W _ _ _ _ _ _ _ _ _ _ _ _ W _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ W _ _ W W _ _ W _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ W _ _ _ _ _ _ _ _ _ _ _ _ W},
-{W _ _ _ _ _ _ _ _ _ _ _ _ _ W _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ W _ _ _ W W _ _ _ W _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ W _ _ _ _ _ _ _ _ _ _ _ _ _ W},
-{W _ _ _ _ _ _ _ _ _ _ _ _ _ _ W _ _ _ _ _ _ _ _ _ _ _ _ W _ _ _ _ _ _ _ _ _ _ W W _ _ _ _ _ _ _ _ _ _ W _ _ _ _ _ _ _ _ _ _ _ _ W _ _ _ _ _ _ _ _ _ _ _ _ _ _ W},
-{W _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ W _ _ _ _ _ _ _ _ _ _ _ W _ _ _ _ _ _ _ _ _ W _ _ W _ _ _ _ _ _ _ _ _ W _ _ _ _ _ _ _ _ _ _ _ W _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ W},
-{W _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ W _ _ _ _ _ _ _ _ _ _ W _ _ _ _ _ _ _ _ W _ _ _ _ W _ _ _ _ _ _ _ _ W _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ W},
-{W _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ W _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ W _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ W},
-{W _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ W _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ W _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ F},
-{W P _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ W _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ W _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ F},
-{W _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ W _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ W _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ W},
-{W _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ W _ _ _ _ _ _ _ _ _ _ W _ _ _ _ _ _ _ _ W _ _ _ _ W _ _ _ _ _ _ _ _ W _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ W},
-{W _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ W _ _ _ _ _ _ _ _ _ _ _ W _ _ _ _ _ _ _ _ _ W _ _ W _ _ _ _ _ _ _ _ _ W _ _ _ _ _ _ _ _ _ _ _ W _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ W},
-{W _ _ _ _ _ _ _ _ _ _ _ _ _ _ W _ _ _ _ _ _ _ _ _ _ _ _ W _ _ _ _ _ _ _ _ _ _ W W _ _ _ _ _ _ _ _ _ _ W _ _ _ _ _ _ _ _ _ _ _ _ W _ _ _ _ _ _ _ _ _ _ _ _ _ _ W},
-{W _ _ _ _ _ _ _ _ _ _ _ _ _ W _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ W _ _ _ W W _ _ _ W _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ W _ _ _ _ _ _ _ _ _ _ _ _ _ W},
-{W _ _ _ _ _ _ _ _ _ _ _ _ W _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ W _ _ W W _ _ W _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ W _ _ _ _ _ _ _ _ _ _ _ _ W},
-{W _ _ _ _ _ _ _ _ _ _ _ W _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ W _ W W _ W _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ W _ _ _ _ _ _ _ _ _ _ _ W},
-{W _ _ _ _ _ _ _ _ _ _ W _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ W W W W _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ W _ _ _ _ _ _ _ _ _ _ W},
-{W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W},
-},
-
-{
-{W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W F F W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W},
-{W _ _ _ _ _ _ _ _ _ _ _ W _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ W _ _ _ _ _ _ _ _ _ W _ _ _ _ W _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ W},
-{W _ _ _ W _ _ _ _ _ _ _ W _ _ _ _ _ _ _ _ _ _ _ _ W _ _ _ _ _ _ _ _ _ _ _ _ W _ _ _ _ _ _ _ _ _ W _ _ _ _ W W _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ W},
-{W _ _ _ W _ _ _ _ _ _ _ W _ _ _ _ _ _ _ _ _ _ _ _ W _ _ _ _ _ _ _ _ _ _ _ _ W _ _ _ _ _ _ _ _ _ W _ _ _ _ _ W W _ _ _ _ _ _ _ _ W W _ _ _ _ _ _ _ _ _ _ _ _ _ W},
-{W _ _ _ W _ _ _ _ _ _ _ W _ _ _ _ _ _ _ _ _ _ _ _ W _ _ _ _ _ _ _ _ _ _ _ _ W _ _ _ _ _ _ _ _ _ W _ _ _ _ _ _ W W _ _ _ _ _ _ _ _ W W _ _ _ _ _ _ _ _ _ _ _ _ W},
-{W _ _ _ W _ _ _ _ _ _ _ W _ _ _ _ _ _ _ _ _ _ _ _ W _ _ _ _ _ _ _ _ _ _ _ _ W _ _ _ _ _ _ _ _ _ W _ _ _ _ _ _ _ W W _ _ _ _ _ _ _ _ W W _ _ _ _ _ _ _ _ _ _ _ W},
-{W _ _ _ W _ _ _ _ _ _ _ W _ _ _ _ _ _ _ _ _ _ _ _ W _ _ _ _ _ _ _ _ _ _ _ _ W _ _ _ _ _ _ _ _ _ W _ _ _ _ _ _ _ _ W W _ _ _ _ _ _ _ _ W W _ _ _ _ _ _ _ _ _ _ W},
-{W _ _ _ W _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ W _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ W _ _ _ _ _ _ _ _ _ W W _ _ _ _ _ _ _ _ W W _ _ _ _ _ _ _ _ _ W},
-{W _ _ _ W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ W W _ _ _ _ _ _ _ _ W},
-{W _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ W _ _ _ _ _ _ _ _ F},
-{W P _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ W _ _ _ _ _ _ _ _ F},
-{W _ _ _ W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ W W _ _ _ _ _ _ _ _ W},
-{W _ _ _ W _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ W _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ W _ _ _ _ _ _ _ _ _ W W _ _ _ _ _ _ _ _ W W _ _ _ _ _ _ _ _ _ W},
-{W _ _ _ W _ _ _ _ _ _ _ W _ _ _ _ _ _ _ _ _ _ _ _ W _ _ _ _ _ _ _ _ _ _ _ _ W _ _ _ _ _ _ _ _ _ W _ _ _ _ _ _ _ _ W W _ _ _ _ _ _ _ _ W W _ _ _ _ _ _ _ _ _ _ W},
-{W _ _ _ W _ _ _ _ _ _ _ W _ _ _ _ _ _ _ _ _ _ _ _ W _ _ _ _ _ _ _ _ _ _ _ _ W _ _ _ _ _ _ _ _ _ W _ _ _ _ _ _ _ W W _ _ _ _ _ _ _ _ W W _ _ _ _ _ _ _ _ _ _ _ W},
-{W _ _ _ W _ _ _ _ _ _ _ W _ _ _ _ _ _ _ _ _ _ _ _ W _ _ _ _ _ _ _ _ _ _ _ _ W _ _ _ _ _ _ _ _ _ W _ _ _ _ _ _ W W _ _ _ _ _ _ _ _ W W _ _ _ _ _ _ _ _ _ _ _ _ W},
-{W _ _ _ W _ _ _ _ _ _ _ W _ _ _ _ _ _ _ _ _ _ _ _ W _ _ _ _ _ _ _ _ _ _ _ _ W _ _ _ _ _ _ _ _ _ W _ _ _ _ _ W W _ _ _ _ _ _ _ _ W W _ _ _ _ _ _ _ _ _ _ _ _ _ W},
-{W _ _ _ W _ _ _ _ _ _ _ W _ _ _ _ _ _ _ _ _ _ _ _ W _ _ _ _ _ _ _ _ _ _ _ _ W _ _ _ _ _ _ _ _ _ W _ _ _ _ W W _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ W},
-{W _ _ _ _ _ _ _ _ _ _ _ W _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ W _ _ _ _ _ _ _ _ _ W _ _ _ _ W _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ W},
-{W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W F F W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W W},
-},
-
+#include "stages.inc"
 };
 
 void set_stage(struct bilebio *bb)
@@ -280,11 +210,22 @@ void set_stage(struct bilebio *bb)
 enum status update_bilebio(struct bilebio *bb)
 {
     int ch;
-    int x, y, rx, ry;
+    int x, y, rx, ry, r;
     struct tile *tile;
     int tries;
     int successful_move = 0;
     struct tile temp_stage[STAGE_HEIGHT][STAGE_WIDTH];
+    int knight_pattern[8][2] = {
+        {-2, -1},
+        { 2, -1},
+        {-2,  1},
+        { 2,  1},
+
+        {-1, -2},
+        {-1,  2},
+        { 1, -2},
+        { 1,  2},
+    };
 
     /* Draw the stage. */
     for (y = 0; y < STAGE_HEIGHT; ++y)
@@ -317,8 +258,8 @@ enum status update_bilebio(struct bilebio *bb)
         for (y = 0; y < STAGE_HEIGHT; ++y) {
             for (x = 0; x < STAGE_WIDTH; ++x) {
                 tile = &bb->stage[y][x];
-                /* We check from bb->stage, rather than temp_stage because
-                 * temp_stage will change, and we don't want the new guys
+                /* We check from temp_stage, rather than bb->stage because
+                 * bb->stage will change, and we don't want the new guys
                  * growing. */
                 switch (temp_stage[y][x].type) {
                 case TILE_ROOT:
@@ -354,34 +295,38 @@ enum status update_bilebio(struct bilebio *bb)
                         tile->active = 0;
                     }
                     else
-                        if (ONEIN(20))
+                        if (tile->growth && ONEIN(10))
+                            tile->active = 1;
+                        if (tile->age == 79)
                             tile->active = 1;
                     break;
                 case TILE_FLOWER:
                     if (tile->active) {
-                         /* Flowers do nothing when stale. */
+                        /* Flowers do nothing when stale. */
+                        r = RANDINT(8);
+                        rx = x + knight_pattern[r][0];
+                        ry = y + knight_pattern[r][1];
+                        try_to_place(bb, 1, NULL, rx, ry, TILE_FRESH_FLOWER());
 
                         tile->growth--;
                         tile->active = 0;
                     }
                     else
                         /* Cannot activate when stale. */
-                        if (ONEIN(20) && tile->growth > 0)
+                        if (ONEIN(15) && tile->growth > 0)
                             tile->active = 1;
                     break;
                 case TILE_VINE:
                     if (tile->active) {
-                        tries = 10;
-                        do {
-                            rx = x + RANDINT(3) - 1;
-                            ry = y + RANDINT(3) - 1;
-                        } while (!try_to_place(bb, 1, &tries, rx, ry, TILE_FRESH_VINE()));
+                        rx = x + RANDINT(3) - 1;
+                        ry = y + RANDINT(3) - 1;
+                        try_to_place(bb, 1, NULL, rx, ry, TILE_FRESH_VINE());
                         tile->growth--;
                         tile->active = 0;
                     }
                     else
                         /* Cannot activate when stale. */
-                        if (ONEIN(20) && tile->growth > 0)
+                        if (ONEIN(10) && tile->growth > 0)
                             tile->active = 1;
                     break;
                 default: break;
@@ -391,7 +336,7 @@ enum status update_bilebio(struct bilebio *bb)
         }
 
         /* Update random map stuff... like nectar! */
-        if (ONEIN(10)) {
+        if (ONEIN(80)) {
             tries = 10;
             do {
                 rx = RANDINT(STAGE_WIDTH);
@@ -410,23 +355,23 @@ void age_tile(struct bilebio *bb, struct tile *t)
 {
     if (t->type == TILE_ROOT) {
         t->age++;
-        if (t->age >= 50)
+        if (t->age >= 80)
             t->dead = 1;
-        if (t->age >= 150)
+        if (t->age >= 81)
             *t = make_tile(TILE_FLOOR);
     }
     else if (t->type == TILE_FLOWER) {
         t->age++;
-        if (t->age >= 10)
+        if (t->age >= 40)
             t->dead = 1;
-        if (t->age >= 30)
+        if (t->age >= 41)
             *t = make_tile(TILE_FLOOR);
     }
     else if (t->type == TILE_VINE) {
         t->age++;
-        if (t->age >= 5)
+        if (t->age >= 40)
             t->dead = 1;
-        if (t->age >= 15)
+        if (t->age >= 41)
             *t = make_tile(TILE_FLOOR);
     }
 }
@@ -438,8 +383,9 @@ int move_player(struct bilebio *bb, int dx, int dy)
 
     if (bb->stage[bb->player_y + dy][bb->player_x + dx].type != TILE_FLOOR &&
         bb->stage[bb->player_y + dy][bb->player_x + dx].type != TILE_EXIT &&
-        bb->stage[bb->player_y + dy][bb->player_x + dx].type != TILE_NECTAR &&
-        !bb->stage[bb->player_y + dy][bb->player_x + dx].dead)
+        bb->stage[bb->player_y + dy][bb->player_x + dx].type != TILE_NECTAR)
+        /* Keep this in? */
+        /*!bb->stage[bb->player_y + dy][bb->player_x + dx].dead)*/
         return 0;
 
     if (bb->stage[bb->player_y + dy][bb->player_x + dx].type == TILE_NECTAR)

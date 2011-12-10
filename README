@@ -1,0 +1,67 @@
+
+Bilebio
+#######
+
+Bilebio is a highscore game where you attempt to escape various rooms of
+ravenously growing plants. The player passes the stage when he/she gets to
+the far side of the room without being entanged. The player becomes entangled
+when a plant grows directly onto him. The player gets bonus points for
+collecting nectar, which shows up at random intervals at random locations.
+
+At the end of each stage the player gets a few choices for upgrades to help
+get past the ever faster spreading plants.
+
+There are three kinds of plants which have different rules for growth:
+
+Roots (%).
+    Roots are rare and probably spred the quickest even though they can only
+    grow once before becoming "stale"*. The root grows like so:
+        ~
+       ~*~
+      ~*%*~
+       ~*~
+        ~
+    After the root becomes stale it can still grow by tossing another root
+    anywhere on the map the player (or plant) isn't located.
+
+Flowers (*).
+    Flowers can grow up to 4 times. The can grow another flower in a L pattern.
+       ~ ~
+      ~   ~
+        *
+      ~   ~
+       ~ ~
+Vines (~).
+    Vines can grow up to 2 times. They grow either another vine (75%), or a
+    flower (25%) right next to them in the eight cardinal directions.
+
+* Stale means the plant has used up it's main method of growing.
+
+Player abilities:
+
+Strength.
+    Moving onto a plant will kill the plant instantly.
+
+    Every stage you get two "lives", the first time a plant tries to grow on
+    you, you live. But the second time...
+
+    Every stage you get three "lives", the first time a plant tries to grow on
+    you, you live, the second time you live. But the third time...
+
+Intelligence.
+    Can hop over walls. Usbable 5 times per stage.
+
+    Can move in walls. Usable 10 times per stage.
+
+    Can create a wall in any moveable direction. Usable 5 times per stage.
+
+Agility.
+    Can move 3 squares in any direction (can't encounter a plant) but can't move
+    for a turn. Usable thrice per stage.
+
+    Can move 5 squares in any direction (can't encounter a plant) but can't move
+    for a turn. Usable twice per stage.
+
+    Can move 7 squares in any direction (can't encounter a plant) but can't move
+    for a turn. Usable once per stage.
+
