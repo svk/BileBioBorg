@@ -301,7 +301,7 @@ enum status update_bilebio(struct bilebio *bb)
                    ability_costs[bb->selected_ability].initial);
     }
     else {
-        set_status(1, RED, "%d. %s (%d to buy)",
+        set_status(1, RED, "%d. %s (%d to learn)",
                    bb->selected_ability,
                    ability_names[bb->selected_ability],
                    ability_costs[bb->selected_ability].initial);

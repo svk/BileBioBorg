@@ -37,30 +37,61 @@ Vines (~).
 
 * Stale means the plant has used up it's main method of growing.
 
-Player abilities:
+================
+Player Abilities
+================
+1st rank must be learned before 2nd rank, 2nd rank must be
+learned before 3rd rank. Can only have up to 3 total abilities.
 
-Strength.
-    Moving onto a plant will kill the plant instantly.
+Agility
+-------
+1st (Learning: 10, Use: 3)
+Can move 3 squares in any direction.
 
-    Can hop over walls. Usbable 5 times per stage.
+2nd (Learning: 30, Use: 5)
+Can move 5 squares in any direction.
 
-    Every stage you get two "lives", the first time a plant tries to grow on
-    you, you live. But the second time...
+3rd (Learning: 60, Use: 7)
+Can move 7 squares in any direction.
 
-Intelligence.
-    Can move in walls. Usable 10 times per stage.
+Strength
+--------
+1st (Learning: 10, Use: 1)
+Moving onto a plant will kill the plant instantly.
 
-    Energy recieved from nectar triples.
+2nd (Learning: 30, Use: 2)
+Can hop over walls.
 
-    Can create a wall in any moveable direction. Usable 5 times per stage.
+3rd (Learning: 60, Use: 10)
+If you were to die from a plant growth and have enough energy
+you live, but lose the energy.
 
-Agility.
-    Can move 3 squares in any direction (can't encounter a plant) but can't move
-    for a turn. Usable thrice per stage.
+Intelligence
+------------
+1st (Learning: 10, Use: 1)
+Can move in walls.
 
-    Can move 5 squares in any direction (can't encounter a plant) but can't move
-    for a turn. Usable twice per stage.
+2nd (Learning: 30, Use: 0)
+Energy recieved from nectar is tripled.
 
-    Can move 7 squares in any direction (can't encounter a plant) but can't move
-    for a turn. Usable once per stage.
+3rd (Learning: 60, Use: 5)
+Can create a wall in any moveable direction.
 
+========
+Controls
+========
+
+Vi-keys for movements. To select an ability press 0-9, 0 is the default
+move action. An ability will be red if you don't know it and you can
+press space to buy it, granted you have enough energy.
+        
+h       Move right.
+j       Move down.
+k       Move up.
+l       Move left.
+y       Move up-left.
+u       Move up-right.
+b       Move down-left.
+n       Move down-right.
+0-9     Select an ability.
+space   Learn an ability.
