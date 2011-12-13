@@ -72,7 +72,7 @@ enum {
     ABILITY_HOP,
     ABILITY_LIFE,
     ABILITY_WALL_MOVE,
-    ABILITY_ENERGIZE,
+    ABILITY_ENERGY,
     ABILITY_CREATE_WALL,
     NUM_ABILITIES
 };
@@ -86,7 +86,7 @@ const char *ability_names[] = {
     "Hop",
     "Life",
     "Wall Move",
-    "Energize",
+    "Energy",
     "Create Wall"
 };
 
@@ -95,15 +95,15 @@ const struct {
     unsigned long recurring;
 } ability_costs[] = {
     {0, 0},
-    {10, 10},
-    {10, 10},
-    {10, 10},
-    {10, 10},
-    {10, 10},
-    {10, 10},
-    {10, 10},
-    {10, 10},
-    {10, 10},
+    {10, 3},
+    {30, 5},
+    {60, 7},
+    {10, 1},
+    {30, 2},
+    {60, 10},
+    {10, 1},
+    {30, 0},
+    {60, 5},
 };
 
 struct bilebio {
@@ -115,12 +115,15 @@ struct bilebio {
     unsigned long player_energy;
     int abilities[NUM_ABILITIES];
     unsigned long selected_ability;
+    int on_wall;
 };
 
 void init_bilebio(struct bilebio *bb);
 void set_stage(struct bilebio *bb);
 enum status update_bilebio(struct bilebio *bb);
 void age_tile(struct bilebio *bb, struct tile *t);
+int is_obstructed(struct bilebio *bb, int x, int y);
+int move_player_to(struct bilebio *bb, int x, int y, struct tile under);
 int move_player(struct bilebio *bb, int dx, int dy);
 int try_to_place(struct bilebio *bb, int deadly, int *tries, int x, int y, struct tile t);
 
@@ -210,10 +213,11 @@ void init_bilebio(struct bilebio *bb)
     bb->player_score = 0;
     bb->player_dead = 0;
     bb->selected_ability = ABILITY_MOVE;
-    bb->player_energy = 50;
+    bb->player_energy = 0;
     bb->abilities[ABILITY_MOVE] = 1;
     for (i = 1; i < NUM_ABILITIES; ++i)
         bb->abilities[i] = 0;
+    bb->on_wall = 0;
     set_stage(bb);
 }
 
@@ -285,7 +289,10 @@ enum status update_bilebio(struct bilebio *bb)
             mvaddch(y, x, tile_display(bb->stage[y][x]));
 
     /* Draw the statuses. */
-    set_status(0, WHITE, "Stage: %d Score: %d", bb->stage_level, bb->player_score);
+    set_status(0, WHITE, "Stage: %d Score: %d Energy: %d",
+                         bb->stage_level,
+                         bb->player_score,
+                         bb->player_energy);
 
     if (bb->abilities[bb->selected_ability]) {
         set_status(1, WHITE, "%d. %s (%d to use)",
@@ -341,14 +348,20 @@ enum status update_bilebio(struct bilebio *bb)
             rx += bb->abilities[r];
         if (rx < 3 && bb->player_energy >= ability_costs[bb->selected_ability].initial) {
             /* Check prerequisites. */
-            if ((bb->selected_ability == 1 ||
-                bb->selected_ability == 2 ||
-                bb->selected_ability == 4 ||
+            if ((bb->selected_ability == 2 ||
+                bb->selected_ability == 3 ||
                 bb->selected_ability == 5 ||
-                bb->selected_ability == 7 ||
-                bb->selected_ability != 8) &&
+                bb->selected_ability == 6 ||
+                bb->selected_ability == 8 ||
+                bb->selected_ability == 9) &&
                 bb->abilities[bb->selected_ability - 1]) {
 
+                bb->player_energy -= ability_costs[bb->selected_ability].initial;
+                bb->abilities[bb->selected_ability] = 1;
+            }
+            else if ((bb->selected_ability == 1 ||
+                     bb->selected_ability == 4 ||
+                     bb->selected_ability == 7)) {
                 bb->player_energy -= ability_costs[bb->selected_ability].initial;
                 bb->abilities[bb->selected_ability] = 1;
             }
@@ -490,46 +503,167 @@ void age_tile(struct bilebio *bb, struct tile *t)
     }
 }
 
-int move_player(struct bilebio *bb, int dx, int dy)
+int is_obstructed(struct bilebio *bb, int x, int y)
 {
-    if (!IN_BOUNDS(bb->player_x + dx, bb->player_y + dy))
-        return 0;
+    if (!IN_BOUNDS(x, y))
+        return 1;
 
-    if (bb->stage[bb->player_y + dy][bb->player_x + dx].type != TILE_FLOOR &&
-        bb->stage[bb->player_y + dy][bb->player_x + dx].type != TILE_EXIT &&
-        bb->stage[bb->player_y + dy][bb->player_x + dx].type != TILE_NECTAR)
+    if (bb->stage[y][x].type != TILE_FLOOR &&
+        bb->stage[y][x].type != TILE_EXIT &&
+        bb->stage[y][x].type != TILE_NECTAR)
+        return 1;
+
+    return 0;
+}
+
+int move_player_to(struct bilebio *bb, int x, int y, struct tile under)
+{
+    if (is_obstructed(bb, x, y))
         return 0; /* Unsuccessful move. (Don't update) */
 
-    if (bb->stage[bb->player_y + dy][bb->player_x + dx].type == TILE_NECTAR) {
+    if (bb->stage[y][x].type == TILE_NECTAR) {
         /* Increase score. */
         bb->player_score *= 1.1;
         /* Add energy. */
-        if (bb->abilities[ABILITY_ENERGIZE])
+        if (bb->abilities[ABILITY_ENERGY])
             bb->player_energy += 30;
         else
             bb->player_energy += 10;
     }
-    if (bb->stage[bb->player_y + dy][bb->player_x + dx].type == TILE_EXIT) {
+    if (bb->stage[y][x].type == TILE_EXIT) {
         bb->player_score += bb->stage_level * 100;
         bb->stage_level++;
         set_stage(bb);
         return 0; /* Unsuccessful move. (Don't update) */
     }
 
-    bb->stage[bb->player_y][bb->player_x] = make_tile(TILE_FLOOR);
-    bb->player_x += dx;
-    bb->player_y += dy;
+    bb->stage[bb->player_y][bb->player_x] = under;
+    bb->player_x = x;
+    bb->player_y = y;
     bb->stage[bb->player_y][bb->player_x] = make_tile(TILE_PLAYER);
+
+    /* Reset on_wall. TODO: Find a better way to do this. */
+    bb->on_wall = 0;
     return 1;
+}
+
+int move_player(struct bilebio *bb, int dx, int dy)
+{
+    struct tile under_player = bb->on_wall ? make_tile(TILE_WALL) : make_tile(TILE_FLOOR);
+
+    switch (bb->selected_ability) {
+    /* ABILITY_MOVE covered by default. */
+
+    case ABILITY_DASH3:
+        if (bb->abilities[ABILITY_DASH3] && bb->player_energy >= ability_costs[ABILITY_DASH3].recurring) {
+            if (!is_obstructed(bb, bb->player_x + (dx * 1), bb->player_y + (dy * 1)))
+            if (!is_obstructed(bb, bb->player_x + (dx * 2), bb->player_y + (dy * 2)))
+            if (!is_obstructed(bb, bb->player_x + (dx * 3), bb->player_y + (dy * 3))) {
+                bb->player_energy -= ability_costs[ABILITY_DASH3].recurring;
+                return move_player_to(bb, bb->player_x + (dx * 3), bb->player_y + (dy * 3), under_player);
+            }
+        }
+        return move_player_to(bb, bb->player_x + dx, bb->player_y + dy, under_player);
+
+    case ABILITY_DASH5:
+        if (bb->abilities[ABILITY_DASH5] && bb->player_energy >= ability_costs[ABILITY_DASH5].recurring) {
+            if (!is_obstructed(bb, bb->player_x + (dx * 1), bb->player_y + (dy * 1)))
+            if (!is_obstructed(bb, bb->player_x + (dx * 2), bb->player_y + (dy * 2)))
+            if (!is_obstructed(bb, bb->player_x + (dx * 3), bb->player_y + (dy * 3)))
+            if (!is_obstructed(bb, bb->player_x + (dx * 4), bb->player_y + (dy * 4)))
+            if (!is_obstructed(bb, bb->player_x + (dx * 5), bb->player_y + (dy * 5))) {
+                bb->player_energy -= ability_costs[ABILITY_DASH3].recurring;
+                return move_player_to(bb, bb->player_x + (dx * 5), bb->player_y + (dy * 5), under_player);
+            }
+        }
+        return move_player_to(bb, bb->player_x + dx, bb->player_y + dy, under_player);
+
+    case ABILITY_DASH7:
+        if (bb->abilities[ABILITY_DASH7] && bb->player_energy >= ability_costs[ABILITY_DASH7].recurring) {
+            if (!is_obstructed(bb, bb->player_x + (dx * 1), bb->player_y + (dy * 1)))
+            if (!is_obstructed(bb, bb->player_x + (dx * 2), bb->player_y + (dy * 2)))
+            if (!is_obstructed(bb, bb->player_x + (dx * 3), bb->player_y + (dy * 3)))
+            if (!is_obstructed(bb, bb->player_x + (dx * 4), bb->player_y + (dy * 4)))
+            if (!is_obstructed(bb, bb->player_x + (dx * 5), bb->player_y + (dy * 5)))
+            if (!is_obstructed(bb, bb->player_x + (dx * 6), bb->player_y + (dy * 6)))
+            if (!is_obstructed(bb, bb->player_x + (dx * 7), bb->player_y + (dy * 7))) {
+                bb->player_energy -= ability_costs[ABILITY_DASH3].recurring;
+                return move_player_to(bb, bb->player_x + (dx * 7), bb->player_y + (dy * 7), under_player);
+            }
+        }
+        return move_player_to(bb, bb->player_x + dx, bb->player_y + dy, under_player);
+
+    case ABILITY_ATTACK:
+        if (bb->abilities[ABILITY_ATTACK] && bb->player_energy >= ability_costs[ABILITY_ATTACK].recurring) {
+            if (!is_obstructed(bb, bb->player_x + dx, bb->player_y + dy) &&
+                TILE_IS_PLANT(bb->stage[bb->player_x + dx][bb->player_y + dy])) {
+                bb->player_energy -= ability_costs[ABILITY_ATTACK].recurring;
+                bb->stage[bb->player_x + dx][bb->player_y + dy] = make_tile(TILE_FLOOR);
+            }
+        }
+        return move_player_to(bb, bb->player_x + dx, bb->player_y + dy, under_player);
+
+    case ABILITY_HOP:
+        if (bb->abilities[ABILITY_HOP] && bb->player_energy >= ability_costs[ABILITY_HOP].recurring) {
+            if (IN_BOUNDS(bb->player_x + dx, bb->player_y + dy) &&
+                bb->stage[bb->player_y + dy][bb->player_x + dx].type == TILE_WALL &&
+                !is_obstructed(bb, bb->player_x + (dx * 2), bb->player_y + (dy * 2))) {
+                bb->player_energy -= ability_costs[ABILITY_HOP].recurring;
+                return move_player_to(bb, bb->player_x + (dx * 2), bb->player_y + (dy * 2), under_player);
+            }
+        }
+        return move_player_to(bb, bb->player_x + dx, bb->player_y + dy, under_player);
+
+    /* ABILITY_LIFE isn't used. */
+
+    case ABILITY_WALL_MOVE:
+        if (bb->abilities[ABILITY_WALL_MOVE] && bb->player_energy >= ability_costs[ABILITY_WALL_MOVE].recurring) {
+            if (IN_BOUNDS(bb->player_x + dx, bb->player_y + dy) &&
+                bb->stage[bb->player_y + dy][bb->player_x + dx].type == TILE_WALL) {
+                bb->player_energy -= ability_costs[ABILITY_WALL_MOVE].recurring;
+
+                bb->stage[bb->player_y][bb->player_x] = under_player;
+                bb->player_x += dx;
+                bb->player_y += dy;
+                bb->stage[bb->player_y][bb->player_x] = make_tile(TILE_PLAYER);
+                bb->on_wall = 1;
+                return 1;
+            }
+        }
+        return move_player_to(bb, bb->player_x + dx, bb->player_y + dy, under_player);
+
+    /* ABILITY_ENERGY isn't used. */
+
+    case ABILITY_CREATE_WALL:
+        if (bb->abilities[ABILITY_CREATE_WALL] && bb->player_energy >= ability_costs[ABILITY_CREATE_WALL].recurring) {
+            if (IN_BOUNDS(bb->player_x + dx, bb->player_y + dy) &&
+                bb->stage[bb->player_y + dy][bb->player_x + dx].type == TILE_FLOOR) {
+                bb->player_energy -= ability_costs[ABILITY_CREATE_WALL].recurring;
+
+                bb->stage[bb->player_y + dy][bb->player_x + dx] = make_tile(TILE_WALL);
+                return 1;
+            }
+        }
+        return move_player_to(bb, bb->player_x + dx, bb->player_y + dy, under_player);
+
+    default:
+        return move_player_to(bb, bb->player_x + dx, bb->player_y + dy, under_player);
+    }
 }
 
 int try_to_place(struct bilebio *bb, int deadly, int *tries, int x, int y, struct tile t)
 {
     if (IN_BOUNDS(x, y)) {
         if (deadly && bb->stage[y][x].type == TILE_PLAYER) {
-            bb->stage[y][x] = t;
-            bb->player_dead = true;
-            return 1; /* Break out. */
+            if (bb->abilities[ABILITY_LIFE] && bb->player_energy >= ability_costs[ABILITY_LIFE].recurring) {
+                bb->player_energy -= ability_costs[ABILITY_LIFE].recurring;
+                return 1;
+            }
+            else {
+                bb->stage[y][x] = t;
+                bb->player_dead = true;
+                return 1; /* Break out. */
+            }
         }
         else if (bb->stage[y][x].type == TILE_FLOOR) {
             bb->stage[y][x] = t;
