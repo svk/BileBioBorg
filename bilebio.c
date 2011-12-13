@@ -219,7 +219,6 @@ void init_bilebio(struct bilebio *bb)
     bb->abilities[ABILITY_MOVE] = 1;
     for (i = 1; i < NUM_ABILITIES; ++i)
         bb->abilities[i] = 0;
-    bb->under_player = make_tile(TILE_FLOOR);
     set_stage(bb);
 }
 
@@ -265,6 +264,7 @@ void set_stage(struct bilebio *bb)
     }
     
     bb->num_nectars_placed = 0;
+    bb->under_player = make_tile(TILE_FLOOR);
 }
 
 enum status update_bilebio(struct bilebio *bb)
