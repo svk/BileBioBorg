@@ -27,6 +27,15 @@ enum status {
     STATUS_DEAD
 };
 
+#define TILE_FRESH_ROOT()   make_plant(TILE_ROOT, 1)
+#define TILE_FRESH_FLOWER() make_plant(TILE_FLOWER, 2)
+#define TILE_FRESH_VINE()   make_plant(TILE_VINE, 2)
+#define TILE_FRESH_NECTAR() make_plant(TILE_NECTAR, 16)
+
+#define TILE_IS_PLANT(t)    ((t).type == TILE_VINE ||   \
+                             (t).type == TILE_FLOWER || \
+                             (t).type == TILE_ROOT)
+
 enum {
     TILE_FLOOR,
     TILE_WALL,
@@ -38,15 +47,6 @@ enum {
     TILE_EXIT,
     NUM_TILES
 };
-
-#define TILE_FRESH_ROOT()   make_plant(TILE_ROOT, 1)
-#define TILE_FRESH_FLOWER() make_plant(TILE_FLOWER, 2)
-#define TILE_FRESH_VINE()   make_plant(TILE_VINE, 2)
-#define TILE_FRESH_NECTAR() make_plant(TILE_NECTAR, 16)
-
-#define TILE_IS_PLANT(t)    ((t).type == TILE_VINE ||   \
-                             (t).type == TILE_FLOWER || \
-                             (t).type == TILE_ROOT)
 
 struct tile {
     unsigned long type;
@@ -132,9 +132,6 @@ int use_ability(struct bilebio *bb, int dx, int dy);
 int try_to_place(struct bilebio *bb, int deadly, int *tries, int x, int y, struct tile t);
 
 void set_status(int row, chtype color, const char *fmt, ...);
-
-/* Level progression. */
-unsigned long get_num_roots(unsigned long stage_level);
 
 int main(void)
 {
@@ -350,14 +347,15 @@ enum status update_bilebio(struct bilebio *bb)
     case '8':
         /* Fall through. */
     case '9':
-        /* Fall through. */
         bb->selected_ability = ch - '0';
         break;
     case ' ':
         rx = 0; /* Sum. Lol, reuse variables. */
         for (r = 1; r < NUM_ABILITIES; ++r)
             rx += bb->abilities[r];
-        if (rx < 3 && bb->player_energy >= ability_costs[bb->selected_ability].initial) {
+        if (rx < 3 &&
+            bb->player_energy >= ability_costs[bb->selected_ability].initial &&
+            !bb->abilities[bb->selected_ability]) {
             /* Check prerequisites. */
             if ((bb->selected_ability == 2 ||
                 bb->selected_ability == 3 ||

@@ -1,15 +1,17 @@
 
-Bilebio
+BileBio
 #######
+
+========
+Overview
+========
 
 Bilebio is a highscore game where you attempt to escape various rooms of
 ravenously growing plants. The player passes the stage when he/she gets to
 the far side of the room without being entanged. The player becomes entangled
-when a plant grows directly onto him. The player gets bonus points for
-collecting nectar, which shows up at random intervals at random locations.
-
-At the end of each stage the player gets a few choices for upgrades to help
-get past the ever faster spreading plants.
+when a plant grows directly onto him. The player gets bonus points and energy
+for collecting nectar, which shows up at random intervals at random locations.
+You can use energy to learn abilities (up to three) that may help you escape.
 
 There are three kinds of plants which have different rules for growth:
 
@@ -40,6 +42,7 @@ Vines (~).
 ================
 Player Abilities
 ================
+
 1st rank must be learned before 2nd rank, 2nd rank must be
 learned before 3rd rank. Can only have up to 3 total abilities.
 
