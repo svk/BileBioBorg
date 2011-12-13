@@ -115,7 +115,7 @@ struct bilebio {
     unsigned long player_energy;
     int abilities[NUM_ABILITIES];
     unsigned long selected_ability;
-    int on_wall;
+    struct tile under_player;
 };
 
 void init_bilebio(struct bilebio *bb);
@@ -213,11 +213,11 @@ void init_bilebio(struct bilebio *bb)
     bb->player_score = 0;
     bb->player_dead = 0;
     bb->selected_ability = ABILITY_MOVE;
-    bb->player_energy = 0;
+    bb->player_energy = 100;
     bb->abilities[ABILITY_MOVE] = 1;
     for (i = 1; i < NUM_ABILITIES; ++i)
         bb->abilities[i] = 0;
-    bb->on_wall = 0;
+    bb->under_player = make_tile(TILE_FLOOR);
     set_stage(bb);
 }
 
@@ -540,13 +540,11 @@ int move_player(struct bilebio *bb, int x, int y)
         return 1;
     }
 
-    bb->stage[bb->player_y][bb->player_x] = bb->on_wall ? make_tile(TILE_WALL) : make_tile(TILE_FLOOR);
+    bb->stage[bb->player_y][bb->player_x] = bb->under_player;
     bb->player_x = x;
     bb->player_y = y;
+    bb->under_player = bb->stage[bb->player_y][bb->player_x];
     bb->stage[bb->player_y][bb->player_x] = make_tile(TILE_PLAYER);
-
-    /* Reset on_wall. TODO: Find a better way to do this. */
-    bb->on_wall = 0;
     return 1;
 }
 
@@ -623,12 +621,17 @@ int use_ability(struct bilebio *bb, int dx, int dy)
                 bb->stage[bb->player_y + dy][bb->player_x + dx].type == TILE_WALL) {
                 bb->player_energy -= ability_costs[ABILITY_WALL_MOVE].recurring;
 
-                bb->stage[bb->player_y][bb->player_x] = bb->on_wall ? make_tile(TILE_WALL) : make_tile(TILE_FLOOR);
+                bb->stage[bb->player_y][bb->player_x] = bb->under_player;
                 bb->player_x += dx;
                 bb->player_y += dy;
+                bb->under_player = bb->stage[bb->player_y][bb->player_x];
                 bb->stage[bb->player_y][bb->player_x] = make_tile(TILE_PLAYER);
-                bb->on_wall = 1;
                 return 1;
+            }
+            /* Can't let the player just stand in a wall forever. */
+            else if (IN_BOUNDS(bb->player_x + dx, bb->player_y + dy) &&
+                     bb->stage[bb->player_y + dy][bb->player_x + dx].type == TILE_PLAYER) {
+                return 0;
             }
         }
         /* Can't let the player just stand in a wall forever. */
