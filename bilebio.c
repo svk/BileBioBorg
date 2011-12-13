@@ -42,7 +42,7 @@ enum {
 #define TILE_FRESH_ROOT()   make_plant(TILE_ROOT, 1)
 #define TILE_FRESH_FLOWER() make_plant(TILE_FLOWER, 2)
 #define TILE_FRESH_VINE()   make_plant(TILE_VINE, 2)
-#define TILE_FRESH_NECTAR() make_plant(TILE_NECTAR, 10)
+#define TILE_FRESH_NECTAR() make_plant(TILE_NECTAR, 16)
 
 #define TILE_IS_PLANT(t)    ((t).type == TILE_ROOT ||   \
                              (t).type == TILE_FLOWER || \
@@ -509,8 +509,8 @@ void age_tile(struct bilebio *bb, struct tile *t)
     }
     else if (t->type == TILE_NECTAR) {
         t->age++;
-        if (t->age % 10)
-            t->growth--;
+        if (((t->age + 1) % 20) == 0)
+            t->growth = t->growth / 2;
         if (t->growth < 1)
             t->growth = 1;
     }
