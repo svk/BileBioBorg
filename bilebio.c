@@ -144,6 +144,7 @@ int main(void)
     curs_set(0);
     noecho();
     start_color();
+    keypad(stdscr, 1);
 
     for (i = 0; i < COLORS; ++i)
         init_pair(i, i, COLOR_BLACK);
@@ -317,15 +318,15 @@ enum status update_bilebio(struct bilebio *bb)
 
     switch (ch) {
     case 'Q': return 0;
-    case 'h': successful_move = use_ability(bb, -1, 0); break;
-    case 'j': successful_move = use_ability(bb, 0, 1); break;
-    case 'k': successful_move = use_ability(bb, 0, -1); break;
-    case 'l': successful_move = use_ability(bb, 1, 0); break;
-    case 'y': successful_move = use_ability(bb, -1, -1); break;
-    case 'u': successful_move = use_ability(bb, 1, -1); break;
-    case 'b': successful_move = use_ability(bb, -1, 1); break;
-    case 'n': successful_move = use_ability(bb, 1, 1); break;
-    case '.': successful_move = use_ability(bb, 0, 0); break;
+    case 'h': case KEY_LEFT: successful_move = use_ability(bb, -1, 0); break;
+    case 'j': case KEY_DOWN: successful_move = use_ability(bb, 0, 1); break;
+    case 'k': case KEY_UP: successful_move = use_ability(bb, 0, -1); break;
+    case 'l': case KEY_RIGHT: successful_move = use_ability(bb, 1, 0); break;
+    case 'y': case KEY_A1: successful_move = use_ability(bb, -1, -1); break;
+    case 'u': case KEY_A3: successful_move = use_ability(bb, 1, -1); break;
+    case 'b': case KEY_C1: successful_move = use_ability(bb, -1, 1); break;
+    case 'n': case KEY_C3: successful_move = use_ability(bb, 1, 1); break;
+    case '.': case KEY_B2: successful_move = use_ability(bb, 0, 0); break;
     case '0':
         /* Fall through. */
     case '1':
