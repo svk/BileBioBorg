@@ -540,9 +540,9 @@ int move_player(struct bilebio *bb, int x, int y)
         bb->player_score *= 1.1;
         /* Add energy. */
         if (bb->abilities[ABILITY_ENERGY])
-            bb->player_energy += 30;
+            bb->player_energy += bb->stage[y][x].growth * 3;
         else
-            bb->player_energy += 10;
+            bb->player_energy += bb->stage[y][x].growth;
         bb->stage[y][x] = make_tile(TILE_FLOOR);
     }
     else if (bb->stage[y][x].type == TILE_EXIT) {
