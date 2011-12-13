@@ -223,7 +223,7 @@ void init_bilebio(struct bilebio *bb)
     set_stage(bb);
 }
 
-#define NUM_STAGES 10
+#define NUM_STAGES 12
 
 const struct tile stages[NUM_STAGES][STAGE_HEIGHT][STAGE_WIDTH] = {
 #include "stages.inc"
