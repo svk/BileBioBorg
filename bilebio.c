@@ -27,18 +27,17 @@ enum status {
     STATUS_DEAD
 };
 
-#define STAGE_HEIGHT    20
-#define STAGE_WIDTH     80
-
-#define TILE_FLOOR      0
-#define TILE_WALL       1
-#define TILE_PLAYER     2
-#define TILE_ROOT       3
-#define TILE_FLOWER     4
-#define TILE_VINE       5
-#define TILE_NECTAR     6
-#define TILE_EXIT       7
-#define TILE_TYPES      8
+enum {
+    TILE_FLOOR,
+    TILE_WALL,
+    TILE_PLAYER,
+    TILE_ROOT,
+    TILE_FLOWER,
+    TILE_VINE,
+    TILE_NECTAR,
+    TILE_EXIT,
+    NUM_TILES
+};
 
 #define TILE_FRESH_ROOT()   make_plant(TILE_ROOT, 1)
 #define TILE_FRESH_FLOWER() make_plant(TILE_FLOWER, 2)
@@ -59,9 +58,6 @@ struct tile {
 struct tile make_plant(unsigned long type, unsigned long growth);
 struct tile make_tile(unsigned long type);
 chtype tile_display(struct tile t);
-
-#define IN_BOUNDS(x, y)     ((x) >= 0 && (x) < STAGE_WIDTH && \
-                             (y) >= 0 && (y) < STAGE_HEIGHT)
 
 enum {
     ABILITY_MOVE,
@@ -105,6 +101,12 @@ const struct {
     {30, 0},
     {60, 5},
 };
+
+#define STAGE_HEIGHT    20
+#define STAGE_WIDTH     80
+
+#define IN_STAGE(x, y)  ((x) >= 0 && (x) < STAGE_WIDTH && \
+                         (y) >= 0 && (y) < STAGE_HEIGHT)
 
 struct bilebio {
     struct tile stage[STAGE_HEIGHT][STAGE_WIDTH];
@@ -189,10 +191,10 @@ struct tile make_tile(unsigned long type)
 
 chtype tile_display(struct tile t)
 {
-    static const chtype display[TILE_TYPES] = {
+    static const chtype display[NUM_TILES] = {
         '.', '#', '@', '%', '*', '~', '$', '>'
     };
-    static const chtype color[TILE_TYPES] = {
+    static const chtype color[NUM_TILES] = {
         WHITE, YELLOW | A_BOLD, BLUE, GREEN,
         MAGENTA, GREEN, YELLOW, CYAN
     };
@@ -221,7 +223,7 @@ void init_bilebio(struct bilebio *bb)
     set_stage(bb);
 }
 
-#define NUM_STAGES 8
+#define NUM_STAGES 10
 
 const struct tile stages[NUM_STAGES][STAGE_HEIGHT][STAGE_WIDTH] = {
 #include "stages.inc"
@@ -504,7 +506,7 @@ void age_tile(struct bilebio *bb, struct tile *t)
 
 int is_obstructed(struct bilebio *bb, int x, int y)
 {
-    if (!IN_BOUNDS(x, y))
+    if (!IN_STAGE(x, y))
         return 1;
 
     if (bb->stage[y][x].type != TILE_FLOOR &&
@@ -529,6 +531,7 @@ int move_player(struct bilebio *bb, int x, int y)
             bb->player_energy += 30;
         else
             bb->player_energy += 10;
+        bb->stage[y][x] = make_tile(TILE_FLOOR);
     }
     else if (bb->stage[y][x].type == TILE_EXIT) {
         bb->player_score += bb->stage_level * 100;
@@ -604,7 +607,7 @@ int use_ability(struct bilebio *bb, int dx, int dy)
 
     case ABILITY_HOP:
         if (bb->abilities[ABILITY_HOP] && bb->player_energy >= ability_costs[ABILITY_HOP].recurring) {
-            if (IN_BOUNDS(bb->player_x + dx, bb->player_y + dy) &&
+            if (IN_STAGE(bb->player_x + dx, bb->player_y + dy) &&
                 bb->stage[bb->player_y + dy][bb->player_x + dx].type == TILE_WALL &&
                 !is_obstructed(bb, bb->player_x + (dx * 2), bb->player_y + (dy * 2))) {
                 bb->player_energy -= ability_costs[ABILITY_HOP].recurring;
@@ -617,7 +620,7 @@ int use_ability(struct bilebio *bb, int dx, int dy)
 
     case ABILITY_WALL_MOVE:
         if (bb->abilities[ABILITY_WALL_MOVE] && bb->player_energy >= ability_costs[ABILITY_WALL_MOVE].recurring) {
-            if (IN_BOUNDS(bb->player_x + dx, bb->player_y + dy) &&
+            if (IN_STAGE(bb->player_x + dx, bb->player_y + dy) &&
                 bb->stage[bb->player_y + dy][bb->player_x + dx].type == TILE_WALL) {
                 bb->player_energy -= ability_costs[ABILITY_WALL_MOVE].recurring;
 
@@ -629,14 +632,14 @@ int use_ability(struct bilebio *bb, int dx, int dy)
                 return 1;
             }
             /* Can't let the player just stand in a wall forever. */
-            else if (IN_BOUNDS(bb->player_x + dx, bb->player_y + dy) &&
+            else if (IN_STAGE(bb->player_x + dx, bb->player_y + dy) &&
                      bb->stage[bb->player_y + dy][bb->player_x + dx].type == TILE_PLAYER) {
                 return 0;
             }
         }
         /* Can't let the player just stand in a wall forever. */
         else if (bb->player_energy < ability_costs[ABILITY_WALL_MOVE].recurring &&
-                 IN_BOUNDS(bb->player_x + dx, bb->player_y + dy) &&
+                 IN_STAGE(bb->player_x + dx, bb->player_y + dy) &&
                  bb->stage[bb->player_y + dy][bb->player_x + dx].type == TILE_PLAYER) {
             return 0;
         }
@@ -646,7 +649,7 @@ int use_ability(struct bilebio *bb, int dx, int dy)
 
     case ABILITY_CREATE_WALL:
         if (bb->abilities[ABILITY_CREATE_WALL] && bb->player_energy >= ability_costs[ABILITY_CREATE_WALL].recurring) {
-            if (IN_BOUNDS(bb->player_x + dx, bb->player_y + dy) &&
+            if (IN_STAGE(bb->player_x + dx, bb->player_y + dy) &&
                 bb->stage[bb->player_y + dy][bb->player_x + dx].type == TILE_FLOOR) {
                 bb->player_energy -= ability_costs[ABILITY_CREATE_WALL].recurring;
 
@@ -663,7 +666,7 @@ int use_ability(struct bilebio *bb, int dx, int dy)
 
 int try_to_place(struct bilebio *bb, int deadly, int *tries, int x, int y, struct tile t)
 {
-    if (IN_BOUNDS(x, y)) {
+    if (IN_STAGE(x, y)) {
         if (deadly && bb->stage[y][x].type == TILE_PLAYER) {
             if (bb->abilities[ABILITY_LIFE] && bb->player_energy >= ability_costs[ABILITY_LIFE].recurring) {
                 bb->player_energy -= ability_costs[ABILITY_LIFE].recurring;
@@ -709,3 +712,4 @@ void set_status(int row, chtype color, const char *fmt, ...)
     mvprintw(row, 0, "%s", buf);
     attroff(color);
 }
+
