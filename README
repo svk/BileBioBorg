@@ -42,16 +42,15 @@ Player abilities:
 Strength.
     Moving onto a plant will kill the plant instantly.
 
+    Can hop over walls. Usbable 5 times per stage.
+
     Every stage you get two "lives", the first time a plant tries to grow on
     you, you live. But the second time...
 
-    Every stage you get three "lives", the first time a plant tries to grow on
-    you, you live, the second time you live. But the third time...
-
 Intelligence.
-    Can hop over walls. Usbable 5 times per stage.
-
     Can move in walls. Usable 10 times per stage.
+
+    Energy recieved from nectar triples.
 
     Can create a wall in any moveable direction. Usable 5 times per stage.
 

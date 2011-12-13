@@ -63,12 +63,58 @@ chtype tile_display(struct tile t);
 #define IN_BOUNDS(x, y)     ((x) >= 0 && (x) < STAGE_WIDTH && \
                              (y) >= 0 && (y) < STAGE_HEIGHT)
 
+enum {
+    ABILITY_MOVE,
+    ABILITY_DASH3,
+    ABILITY_DASH5,
+    ABILITY_DASH7,
+    ABILITY_ATTACK,
+    ABILITY_HOP,
+    ABILITY_LIFE,
+    ABILITY_WALL_MOVE,
+    ABILITY_ENERGIZE,
+    ABILITY_CREATE_WALL,
+    NUM_ABILITIES
+};
+
+const char *ability_names[] = {
+    "Move",
+    "Dash L1",
+    "Dash L2",
+    "Dash L3",
+    "Attack",
+    "Hop",
+    "Life",
+    "Wall Move",
+    "Energize",
+    "Create Wall"
+};
+
+const struct {
+    unsigned long initial;
+    unsigned long recurring;
+} ability_costs[] = {
+    {0, 0},
+    {10, 10},
+    {10, 10},
+    {10, 10},
+    {10, 10},
+    {10, 10},
+    {10, 10},
+    {10, 10},
+    {10, 10},
+    {10, 10},
+};
+
 struct bilebio {
     struct tile stage[STAGE_HEIGHT][STAGE_WIDTH];
     unsigned long stage_level;
     int player_x, player_y;
     unsigned long player_score;
     int player_dead;
+    unsigned long player_energy;
+    int abilities[NUM_ABILITIES];
+    unsigned long selected_ability;
 };
 
 void init_bilebio(struct bilebio *bb);
@@ -159,9 +205,15 @@ chtype tile_display(struct tile t)
 
 void init_bilebio(struct bilebio *bb)
 {
+    int i;
     bb->stage_level = 1;
     bb->player_score = 0;
     bb->player_dead = 0;
+    bb->selected_ability = ABILITY_MOVE;
+    bb->player_energy = 50;
+    bb->abilities[ABILITY_MOVE] = 1;
+    for (i = 1; i < NUM_ABILITIES; ++i)
+        bb->abilities[i] = 0;
     set_stage(bb);
 }
 
@@ -193,7 +245,7 @@ void set_stage(struct bilebio *bb)
     }
 
     /* Populate the stage. */
-    num_roots = (int)floor(pow(2, bb->stage_level) / 10.0f) + 1;
+    num_roots = bb->stage_level * 2 + 1;
     tries = 10;
     while (num_roots-- > 0) {
         while (tries-- > 0) {
@@ -235,6 +287,19 @@ enum status update_bilebio(struct bilebio *bb)
     /* Draw the statuses. */
     set_status(0, WHITE, "Stage: %d Score: %d", bb->stage_level, bb->player_score);
 
+    if (bb->abilities[bb->selected_ability]) {
+        set_status(1, WHITE, "%d. %s (%d to use)",
+                   bb->selected_ability,
+                   ability_names[bb->selected_ability],
+                   ability_costs[bb->selected_ability].initial);
+    }
+    else {
+        set_status(1, RED, "%d. %s (%d to buy)",
+                   bb->selected_ability,
+                   ability_names[bb->selected_ability],
+                   ability_costs[bb->selected_ability].initial);
+    }
+
     ch = getch();
 
     switch (ch) {
@@ -248,7 +313,47 @@ enum status update_bilebio(struct bilebio *bb)
     case 'b': successful_move = move_player(bb, -1, 1); break;
     case 'n': successful_move = move_player(bb, 1, 1); break;
     case '.': successful_move = 1; break;
-    case 'r': set_stage(bb); return 1; break;
+    case '0':
+        /* Fall through. */
+    case '1':
+        /* Fall through. */
+    case '2':
+        /* Fall through. */
+    case '3':
+        /* Fall through. */
+    case '4':
+        /* Fall through. */
+    case '5':
+        /* Fall through. */
+    case '6':
+        /* Fall through. */
+    case '7':
+        /* Fall through. */
+    case '8':
+        /* Fall through. */
+    case '9':
+        /* Fall through. */
+        bb->selected_ability = ch - '0';
+        break;
+    case ' ':
+        rx = 0; /* Sum. Lol, reuse variables. */
+        for (r = 1; r < NUM_ABILITIES; ++r)
+            rx += bb->abilities[r];
+        if (rx < 3 && bb->player_energy >= ability_costs[bb->selected_ability].initial) {
+            /* Check prerequisites. */
+            if ((bb->selected_ability == 1 ||
+                bb->selected_ability == 2 ||
+                bb->selected_ability == 4 ||
+                bb->selected_ability == 5 ||
+                bb->selected_ability == 7 ||
+                bb->selected_ability != 8) &&
+                bb->abilities[bb->selected_ability - 1]) {
+
+                bb->player_energy -= ability_costs[bb->selected_ability].initial;
+                bb->abilities[bb->selected_ability] = 1;
+            }
+        }
+        break;
     default: break;
     }
 
@@ -302,13 +407,21 @@ enum status update_bilebio(struct bilebio *bb)
                     break;
                 case TILE_FLOWER:
                     if (tile->active) {
-                        /* Flowers do nothing when stale. */
-                        r = RANDINT(8);
-                        rx = x + knight_pattern[r][0];
-                        ry = y + knight_pattern[r][1];
-                        try_to_place(bb, 1, NULL, rx, ry, TILE_FRESH_FLOWER());
+                        if (ONEIN(4)) {
+                            r = RANDINT(8);
+                            rx = x + knight_pattern[r][0];
+                            ry = y + knight_pattern[r][1];
+                            try_to_place(bb, 1, NULL, rx, ry, TILE_FRESH_VINE());
+                        }
+                        else {
+                            r = RANDINT(8);
+                            rx = x + knight_pattern[r][0];
+                            ry = y + knight_pattern[r][1];
+                            try_to_place(bb, 1, NULL, rx, ry, TILE_FRESH_FLOWER());
+                            /* Only placing another flower uses a growth. */
+                            tile->growth--;
+                        }
 
-                        tile->growth--;
                         tile->active = 0;
                     }
                     else
@@ -385,17 +498,22 @@ int move_player(struct bilebio *bb, int dx, int dy)
     if (bb->stage[bb->player_y + dy][bb->player_x + dx].type != TILE_FLOOR &&
         bb->stage[bb->player_y + dy][bb->player_x + dx].type != TILE_EXIT &&
         bb->stage[bb->player_y + dy][bb->player_x + dx].type != TILE_NECTAR)
-        /* Keep this in? */
-        /*!bb->stage[bb->player_y + dy][bb->player_x + dx].dead)*/
-        return 0;
+        return 0; /* Unsuccessful move. (Don't update) */
 
-    if (bb->stage[bb->player_y + dy][bb->player_x + dx].type == TILE_NECTAR)
+    if (bb->stage[bb->player_y + dy][bb->player_x + dx].type == TILE_NECTAR) {
+        /* Increase score. */
         bb->player_score *= 1.1;
+        /* Add energy. */
+        if (bb->abilities[ABILITY_ENERGIZE])
+            bb->player_energy += 30;
+        else
+            bb->player_energy += 10;
+    }
     if (bb->stage[bb->player_y + dy][bb->player_x + dx].type == TILE_EXIT) {
         bb->player_score += bb->stage_level * 100;
         bb->stage_level++;
         set_stage(bb);
-        return 0; /* Skip the update. */
+        return 0; /* Unsuccessful move. (Don't update) */
     }
 
     bb->stage[bb->player_y][bb->player_x] = make_tile(TILE_FLOOR);
