@@ -630,6 +630,7 @@ int use_ability(struct bilebio *bb, int dx, int dy)
                 /* 50% chance of success. */
                 if (ONEIN(2))
                     bb->stage[bb->player_y + dy][bb->player_x + dx] = make_tile(TILE_FLOOR);
+                return 1;
             }
         }
         return move_player(bb, bb->player_x + dx, bb->player_y + dy);
