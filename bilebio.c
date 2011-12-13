@@ -218,7 +218,7 @@ void init_bilebio(struct bilebio *bb)
     bb->player_score = 0;
     bb->player_dead = 0;
     bb->selected_ability = ABILITY_MOVE;
-    bb->player_energy = 0;
+    bb->player_energy = 100;
     bb->abilities[ABILITY_MOVE] = 1;
     for (i = 1; i < NUM_ABILITIES; ++i)
         bb->abilities[i] = 0;
@@ -609,10 +609,10 @@ int use_ability(struct bilebio *bb, int dx, int dy)
 
     case ABILITY_ATTACK:
         if (bb->abilities[ABILITY_ATTACK] && bb->player_energy >= ability_costs[ABILITY_ATTACK].recurring) {
-            if (!is_obstructed(bb, bb->player_x + dx, bb->player_y + dy) &&
-                TILE_IS_PLANT(bb->stage[bb->player_x + dx][bb->player_y + dy])) {
+            if (IN_STAGE(bb->player_x + dx, bb->player_y + dy) &&
+                TILE_IS_PLANT(bb->stage[bb->player_y + dy][bb->player_x + dx])) {
                 bb->player_energy -= ability_costs[ABILITY_ATTACK].recurring;
-                bb->stage[bb->player_x + dx][bb->player_y + dy] = make_tile(TILE_FLOOR);
+                bb->stage[bb->player_y + dy][bb->player_x + dx] = make_tile(TILE_FLOOR);
             }
         }
         return move_player(bb, bb->player_x + dx, bb->player_y + dy);
