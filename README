@@ -45,13 +45,13 @@ learned before 3rd rank. Can only have up to 3 total abilities.
 
 Agility
 -------
-1st (Learning: 10, Use: 3)
+1st (Learning: 10, Use: 2)
 Can move 3 squares in any direction.
 
-2nd (Learning: 30, Use: 5)
+2nd (Learning: 20, Use: 3)
 Can move 5 squares in any direction.
 
-3rd (Learning: 60, Use: 7)
+3rd (Learning: 40, Use: 5)
 Can move 7 squares in any direction.
 
 Strength
@@ -59,7 +59,7 @@ Strength
 1st (Learning: 10, Use: 1)
 Moving onto a plant will kill the plant instantly.
 
-2nd (Learning: 30, Use: 2)
+2nd (Learning: 30, Use: 1)
 Can hop over walls.
 
 3rd (Learning: 60, Use: 10)
@@ -71,11 +71,11 @@ Intelligence
 1st (Learning: 10, Use: 5)
 Can move in walls.
 
-2nd (Learning: 30, Use: 0)
-Energy recieved from nectar is tripled.
-
-3rd (Learning: 60, Use: 5)
+2nd (Learning: 30, Use: 5)
 Can create a wall in any moveable direction.
+
+3rd (Learning: 60, Use: 0)
+Energy recieved from nectar is tripled.
 
 ========
 Controls

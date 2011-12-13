@@ -69,8 +69,8 @@ enum {
     ABILITY_HOP,
     ABILITY_LIFE,
     ABILITY_WALL_MOVE,
-    ABILITY_ENERGY,
     ABILITY_CREATE_WALL,
+    ABILITY_ENERGY,
     NUM_ABILITIES
 };
 
@@ -83,8 +83,8 @@ const char *ability_names[] = {
     "Hop",
     "Life",
     "Wall Move",
+    "Create Wall",
     "Energy",
-    "Create Wall"
 };
 
 const struct {
@@ -92,15 +92,15 @@ const struct {
     unsigned long recurring;
 } ability_costs[] = {
     {0, 0},
-    {10, 3},
-    {30, 5},
-    {60, 7},
+    {10, 2},
+    {20, 3},
+    {40, 5},
     {10, 1},
-    {30, 2},
+    {30, 1},
     {60, 10},
     {10, 5},
-    {30, 0},
-    {60, 5},
+    {30, 5},
+    {60, 0},
 };
 
 #define STAGE_HEIGHT    20
