@@ -306,6 +306,10 @@ enum status update_bilebio(struct bilebio *bb)
                    ability_names[bb->selected_ability],
                    ability_costs[bb->selected_ability].initial);
     }
+    rx = 0; /* Sum. Lol, reuse variables. */
+    for (r = 1; r < NUM_ABILITIES; ++r)
+        rx += bb->abilities[r];
+    set_status(2, BLUE, rx < 3 ? "%d abilities to learn" : "Can't learn any more", 3 - rx);
 
     ch = getch();
 
@@ -382,8 +386,14 @@ enum status update_bilebio(struct bilebio *bb)
                 switch (temp_stage[y][x].type) {
                 case TILE_ROOT:
                     if (tile->active) {
-                        if (tile->growth > 0) {
-
+                        if (ONEIN(10)) {
+                            tries = 10;
+                            do {
+                                rx = RANDINT(STAGE_WIDTH);
+                                ry = RANDINT(STAGE_HEIGHT);
+                            } while (!try_to_place(bb, 0, &tries, rx, ry, TILE_FRESH_ROOT()));
+                        }
+                        else {
                             try_to_place(bb, 1, NULL, x - 2, y, TILE_FRESH_VINE());
                             try_to_place(bb, 1, NULL, x - 1, y, TILE_FRESH_FLOWER());
                             try_to_place(bb, 1, NULL, x + 1, y, TILE_FRESH_FLOWER());
@@ -400,22 +410,11 @@ enum status update_bilebio(struct bilebio *bb)
                             try_to_place(bb, 1, NULL, x - 1, y - 1, TILE_FRESH_VINE());
                             try_to_place(bb, 1, NULL, x - 1, y + 1, TILE_FRESH_VINE());
                             try_to_place(bb, 1, NULL, x + 1, y - 1, TILE_FRESH_VINE());
-
-                            tile->growth--;
-                        }
-                        else {
-                            tries = 10;
-                            do {
-                                rx = RANDINT(STAGE_WIDTH);
-                                ry = RANDINT(STAGE_HEIGHT);
-                            } while (!try_to_place(bb, 0, &tries, rx, ry, TILE_FRESH_ROOT()));
                         }
                         tile->active = 0;
                     }
                     else
-                        if (tile->growth && ONEIN(10))
-                            tile->active = 1;
-                        if (tile->age == 79)
+                        if (ONEIN(20))
                             tile->active = 1;
                     break;
                 case TILE_FLOWER:
@@ -482,9 +481,9 @@ void age_tile(struct bilebio *bb, struct tile *t)
     (void)bb;
     if (t->type == TILE_ROOT) {
         t->age++;
-        if (t->age >= 80)
+        if (t->age >= 200)
             t->dead = 1;
-        if (t->age >= 81)
+        if (t->age >= 201)
             *t = make_tile(TILE_FLOOR);
     }
     else if (t->type == TILE_FLOWER) {
