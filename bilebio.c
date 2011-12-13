@@ -509,7 +509,7 @@ void age_tile(struct bilebio *bb, struct tile *t)
     }
     else if (t->type == TILE_NECTAR) {
         t->age++;
-        if (((t->age + 1) % 20) == 0)
+        if (((t->age + 1) % 40) == 0)
             t->growth = t->growth / 2;
         if (t->growth < 1)
             t->growth = 1;
