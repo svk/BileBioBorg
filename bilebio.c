@@ -42,6 +42,7 @@ enum {
 #define TILE_FRESH_ROOT()   make_plant(TILE_ROOT, 1)
 #define TILE_FRESH_FLOWER() make_plant(TILE_FLOWER, 2)
 #define TILE_FRESH_VINE()   make_plant(TILE_VINE, 2)
+#define TILE_FRESH_NECTAR() make_plant(TILE_NECTAR, 10)
 
 #define TILE_IS_PLANT(t)    ((t).type == TILE_ROOT ||   \
                              (t).type == TILE_FLOWER || \
@@ -111,6 +112,7 @@ const struct {
 struct bilebio {
     struct tile stage[STAGE_HEIGHT][STAGE_WIDTH];
     unsigned long stage_level;
+    unsigned long num_nectars_placed;
     int player_x, player_y;
     unsigned long player_score;
     int player_dead;
@@ -216,7 +218,7 @@ void init_bilebio(struct bilebio *bb)
     bb->player_score = 0;
     bb->player_dead = 0;
     bb->selected_ability = ABILITY_MOVE;
-    bb->player_energy = 100;
+    bb->player_energy = 0;
     bb->abilities[ABILITY_MOVE] = 1;
     for (i = 1; i < NUM_ABILITIES; ++i)
         bb->abilities[i] = 0;
@@ -264,6 +266,8 @@ void set_stage(struct bilebio *bb)
             }
         }
     }
+    
+    bb->num_nectars_placed = 0;
 }
 
 enum status update_bilebio(struct bilebio *bb)
@@ -464,12 +468,12 @@ enum status update_bilebio(struct bilebio *bb)
         }
 
         /* Update random map stuff... like nectar! */
-        if (ONEIN(80)) {
+        if (ONEIN(80) && bb->num_nectars_placed++ < 10) {
             tries = 10;
             do {
                 rx = RANDINT(STAGE_WIDTH);
                 ry = RANDINT(STAGE_HEIGHT);
-            } while (!try_to_place(bb, 0, &tries, rx, ry, make_tile(TILE_NECTAR)));
+            } while (!try_to_place(bb, 0, &tries, rx, ry, TILE_FRESH_NECTAR()));
         }
     }
 
@@ -502,6 +506,13 @@ void age_tile(struct bilebio *bb, struct tile *t)
             t->dead = 1;
         if (t->age >= 41)
             *t = make_tile(TILE_FLOOR);
+    }
+    else if (t->type == TILE_NECTAR) {
+        t->age++;
+        if (t->age % 10)
+            t->growth--;
+        if (t->growth < 1)
+            t->growth = 1;
     }
 }
 
