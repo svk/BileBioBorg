@@ -44,7 +44,7 @@ enum {
 #define TILE_FRESH_VINE()   make_plant(TILE_VINE, 2)
 #define TILE_FRESH_NECTAR() make_plant(TILE_NECTAR, 16)
 
-#define TILE_IS_PLANT(t)    ((t).type == TILE_ROOT ||   \
+#define TILE_IS_PLANT(t)    ((t).type == TILE_VINE ||   \
                              (t).type == TILE_FLOWER || \
                              (t).type == TILE_ROOT)
 
@@ -305,7 +305,7 @@ enum status update_bilebio(struct bilebio *bb)
         set_status(1, WHITE, "%d. %s (%d to use)",
                    bb->selected_ability,
                    ability_names[bb->selected_ability],
-                   ability_costs[bb->selected_ability].initial);
+                   ability_costs[bb->selected_ability].recurring);
     }
     else {
         set_status(1, RED, "%d. %s (%d to learn)",
