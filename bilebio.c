@@ -95,7 +95,7 @@ const struct {
     {10, 2},
     {20, 3},
     {40, 5},
-    {10, 1},
+    {10, 0},
     {30, 1},
     {60, 10},
     {10, 5},
@@ -112,6 +112,7 @@ const struct {
 struct bilebio {
     struct tile stage[STAGE_HEIGHT][STAGE_WIDTH];
     unsigned long stage_level;
+    unsigned long stage_age;
     unsigned long num_nectars_placed;
     int player_x, player_y;
     unsigned long player_score;
@@ -265,6 +266,7 @@ void set_stage(struct bilebio *bb)
     
     bb->num_nectars_placed = 0;
     bb->under_player = make_tile(TILE_FLOOR);
+    bb->stage_age = 0;
 }
 
 enum status update_bilebio(struct bilebio *bb)
@@ -391,11 +393,12 @@ enum status update_bilebio(struct bilebio *bb)
                 switch (temp_stage[y][x].type) {
                 case TILE_ROOT:
                     if (tile->active) {
-                        if (ONEIN(10)) {
+                        if (ONEIN(5)) {
                             tries = 10;
                             do {
-                                rx = RANDINT(STAGE_WIDTH);
-                                ry = RANDINT(STAGE_HEIGHT);
+                                /* Prefer places close to the player. */
+                                rx = bb->player_x + RANDINT(10) - 5;
+                                ry = bb->player_y + RANDINT(40) - 20;
                             } while (!try_to_place(bb, 0, &tries, rx, ry, TILE_FRESH_ROOT()));
                         }
                         else {
@@ -473,6 +476,8 @@ enum status update_bilebio(struct bilebio *bb)
                 ry = RANDINT(STAGE_HEIGHT);
             } while (!try_to_place(bb, 0, &tries, rx, ry, TILE_FRESH_NECTAR()));
         }
+        
+        bb->stage_age++;
     }
 
     if (bb->player_dead)
@@ -546,6 +551,16 @@ int move_player(struct bilebio *bb, int x, int y)
     else if (bb->stage[y][x].type == TILE_EXIT) {
         bb->player_score += bb->stage_level * 100;
         bb->stage_level++;
+        
+        if (bb->stage_age < 160) {
+            bb->player_energy += 16;
+            bb->player_score += bb->stage_level * 10;
+        }
+        else if (bb->stage_age < 320) {
+            bb->player_energy += 8;
+            bb->player_score += bb->stage_level * 5;
+        }
+        
         set_stage(bb);
         return 0; /* Unsuccessful move. (Don't update) */
     }
@@ -608,9 +623,13 @@ int use_ability(struct bilebio *bb, int dx, int dy)
     case ABILITY_ATTACK:
         if (bb->abilities[ABILITY_ATTACK] && bb->player_energy >= ability_costs[ABILITY_ATTACK].recurring) {
             if (IN_STAGE(bb->player_x + dx, bb->player_y + dy) &&
-                TILE_IS_PLANT(bb->stage[bb->player_y + dy][bb->player_x + dx])) {
+                TILE_IS_PLANT(bb->stage[bb->player_y + dy][bb->player_x + dx]) &&
+                /* Can't attack roots. */
+                bb->stage[bb->player_y + dy][bb->player_x + dx].type != TILE_ROOT) {
                 bb->player_energy -= ability_costs[ABILITY_ATTACK].recurring;
-                bb->stage[bb->player_y + dy][bb->player_x + dx] = make_tile(TILE_FLOOR);
+                /* 50% chance of success. */
+                if (ONEIN(2))
+                    bb->stage[bb->player_y + dy][bb->player_x + dx] = make_tile(TILE_FLOOR);
             }
         }
         return move_player(bb, bb->player_x + dx, bb->player_y + dy);
