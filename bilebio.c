@@ -225,7 +225,7 @@ void init_bilebio(struct bilebio *bb)
     bb->player_score = 0;
     bb->player_dead = 0;
     bb->selected_ability = ABILITY_MOVE;
-    bb->player_energy = 1000;
+    bb->player_energy = 0;
     bb->abilities[ABILITY_MOVE] = 1;
     for (i = 1; i < NUM_ABILITIES; ++i)
         bb->abilities[i] = 0;
