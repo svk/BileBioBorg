@@ -550,7 +550,7 @@ int move_player(struct bilebio *bb, int x, int y)
 
     if (bb->stage[y][x].type == TILE_NECTAR) {
         /* Increase score. */
-        bb->player_score += bb->player_energy += bb->stage[y][x].growth * 8;
+        bb->player_score += bb->stage[y][x].growth * 8;
         /* Add energy. */
         if (bb->abilities[ABILITY_ENERGY])
             bb->player_energy += bb->stage[y][x].growth * 3;
