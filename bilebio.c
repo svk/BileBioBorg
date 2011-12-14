@@ -42,8 +42,11 @@ enum status {
 /* Chance = (l+b-1) / (b^2), where b = base chance and l = stage level. */
 #define ACTIVE_CHANCE(base, level)   (ONEIN(((base)*(base))/((level)+(base)-1)))
 
+#define TILE_REPELLENT_LIFESPAN 10
+
 enum {
     TILE_FLOOR,
+    TILE_REPELLENT,
     TILE_WALL,
     TILE_PLAYER,
     TILE_ROOT,
@@ -68,9 +71,9 @@ chtype tile_display(struct tile t);
 
 enum {
     ABILITY_MOVE,
-    ABILITY_DASH3,
-    ABILITY_DASH5,
-    ABILITY_DASH7,
+    ABILITY_DASH,
+    ABILITY_PLANT_HOP,
+    ABILITY_REPELLENT,
     ABILITY_ATTACK,
     ABILITY_WALL_HOP,
     ABILITY_LIFE,
@@ -82,9 +85,9 @@ enum {
 
 const char *ability_names[] = {
     "Move",
-    "Dash L1",
-    "Dash L2",
-    "Dash L3",
+    "Dash",
+    "Plant Hop",
+    "Repellent",
     "Attack",
     "Wall Hop",
     "Life",
@@ -99,8 +102,8 @@ const struct {
 } ability_costs[] = {
     {0, 0},
     {10, 2},
-    {20, 3},
-    {40, 5},
+    {30, 2},
+    {60, 10},
     {10, 2},
     {30, 1},
     {60, 50},
@@ -199,11 +202,11 @@ struct tile make_tile(unsigned long type)
 chtype tile_display(struct tile t)
 {
     static const chtype display[NUM_TILES] = {
-        '.', '#', '@', '%', '*', '~', '$', '>'
+        '.', ',', '#', '@', '%', '*', '~', '$', '>'
     };
     static const chtype color[NUM_TILES] = {
-        WHITE, YELLOW | A_BOLD, BLUE, GREEN,
-        MAGENTA, GREEN, YELLOW, CYAN
+        WHITE, MAGENTA, YELLOW | A_BOLD, BLUE,
+        GREEN, MAGENTA, GREEN, YELLOW, CYAN
     };
 
     if (t.active) {
@@ -222,7 +225,7 @@ void init_bilebio(struct bilebio *bb)
     bb->player_score = 0;
     bb->player_dead = 0;
     bb->selected_ability = ABILITY_MOVE;
-    bb->player_energy = 0;
+    bb->player_energy = 1000;
     bb->abilities[ABILITY_MOVE] = 1;
     for (i = 1; i < NUM_ABILITIES; ++i)
         bb->abilities[i] = 0;
@@ -525,6 +528,11 @@ void age_tile(struct bilebio *bb, struct tile *t)
         if (t->growth < 1)
             t->growth = 1;
     }
+    else if (t->type == TILE_REPELLENT) {
+        t->age++;
+        if (t->age >= TILE_REPELLENT_LIFESPAN)
+            *t = make_tile(TILE_FLOOR);
+    }
 }
 
 int is_obstructed(struct bilebio *bb, int x, int y)
@@ -533,6 +541,7 @@ int is_obstructed(struct bilebio *bb, int x, int y)
         return 1;
 
     if (bb->stage[y][x].type != TILE_FLOOR &&
+        bb->stage[y][x].type != TILE_REPELLENT &&
         bb->stage[y][x].type != TILE_EXIT &&
         bb->stage[y][x].type != TILE_NECTAR &&
         bb->stage[y][x].type != TILE_PLAYER &&
@@ -596,45 +605,43 @@ int move_player(struct bilebio *bb, int x, int y)
 
 int use_ability(struct bilebio *bb, int dx, int dy)
 {
+    int x, y;
+    
     switch (bb->selected_ability) {
     /* ABILITY_MOVE covered by default. */
 
-    case ABILITY_DASH3:
-        if (bb->abilities[ABILITY_DASH3] && bb->player_energy >= ability_costs[ABILITY_DASH3].recurring) {
+    case ABILITY_DASH:
+        if (bb->abilities[ABILITY_DASH] && bb->player_energy >= ability_costs[ABILITY_DASH].recurring) {
             if (!is_obstructed(bb, bb->player_x + (dx * 1), bb->player_y + (dy * 1)))
             if (!is_obstructed(bb, bb->player_x + (dx * 2), bb->player_y + (dy * 2)))
-            if (!is_obstructed(bb, bb->player_x + (dx * 3), bb->player_y + (dy * 3))) {
-                bb->player_energy -= ability_costs[ABILITY_DASH3].recurring;
-                return move_player(bb, bb->player_x + (dx * 3), bb->player_y + (dy * 3));
+            if (!is_obstructed(bb, bb->player_x + (dx * 3), bb->player_y + (dy * 3)))
+            if (!is_obstructed(bb, bb->player_x + (dx * 4), bb->player_y + (dy * 4))) {
+                bb->player_energy -= ability_costs[ABILITY_DASH].recurring;
+                return move_player(bb, bb->player_x + (dx * 4), bb->player_y + (dy * 4));
             }
         }
         return move_player(bb, bb->player_x + dx, bb->player_y + dy);
 
-    case ABILITY_DASH5:
-        if (bb->abilities[ABILITY_DASH5] && bb->player_energy >= ability_costs[ABILITY_DASH5].recurring) {
-            if (!is_obstructed(bb, bb->player_x + (dx * 1), bb->player_y + (dy * 1)))
-            if (!is_obstructed(bb, bb->player_x + (dx * 2), bb->player_y + (dy * 2)))
-            if (!is_obstructed(bb, bb->player_x + (dx * 3), bb->player_y + (dy * 3)))
-            if (!is_obstructed(bb, bb->player_x + (dx * 4), bb->player_y + (dy * 4)))
-            if (!is_obstructed(bb, bb->player_x + (dx * 5), bb->player_y + (dy * 5))) {
-                bb->player_energy -= ability_costs[ABILITY_DASH3].recurring;
-                return move_player(bb, bb->player_x + (dx * 5), bb->player_y + (dy * 5));
+    case ABILITY_PLANT_HOP:
+        if (bb->abilities[ABILITY_PLANT_HOP] && bb->player_energy >= ability_costs[ABILITY_PLANT_HOP].recurring) {
+            if (IN_STAGE(bb->player_x + dx, bb->player_y + dy) &&
+                TILE_IS_PLANT(bb->stage[bb->player_y + dy][bb->player_x + dx]) &&
+                !is_obstructed(bb, bb->player_x + (dx * 2), bb->player_y + (dy * 2))) {
+                bb->player_energy -= ability_costs[ABILITY_PLANT_HOP].recurring;
+                return move_player(bb, bb->player_x + (dx * 2), bb->player_y + (dy * 2));
             }
         }
         return move_player(bb, bb->player_x + dx, bb->player_y + dy);
 
-    case ABILITY_DASH7:
-        if (bb->abilities[ABILITY_DASH7] && bb->player_energy >= ability_costs[ABILITY_DASH7].recurring) {
-            if (!is_obstructed(bb, bb->player_x + (dx * 1), bb->player_y + (dy * 1)))
-            if (!is_obstructed(bb, bb->player_x + (dx * 2), bb->player_y + (dy * 2)))
-            if (!is_obstructed(bb, bb->player_x + (dx * 3), bb->player_y + (dy * 3)))
-            if (!is_obstructed(bb, bb->player_x + (dx * 4), bb->player_y + (dy * 4)))
-            if (!is_obstructed(bb, bb->player_x + (dx * 5), bb->player_y + (dy * 5)))
-            if (!is_obstructed(bb, bb->player_x + (dx * 6), bb->player_y + (dy * 6)))
-            if (!is_obstructed(bb, bb->player_x + (dx * 7), bb->player_y + (dy * 7))) {
-                bb->player_energy -= ability_costs[ABILITY_DASH3].recurring;
-                return move_player(bb, bb->player_x + (dx * 7), bb->player_y + (dy * 7));
+    case ABILITY_REPELLENT:
+        if (bb->abilities[ABILITY_REPELLENT] && bb->player_energy >= ability_costs[ABILITY_REPELLENT].recurring) {
+            for (y = -2; y <= 2; ++y) {
+                for (x = -2; x <= 2; ++x) {
+                    if (bb->stage[bb->player_y + y][bb->player_x + x].type == TILE_FLOOR)
+                        bb->stage[bb->player_y + y][bb->player_x + x] = make_tile(TILE_REPELLENT);
+                }
             }
+            return 1;
         }
         return move_player(bb, bb->player_x + dx, bb->player_y + dy);
 

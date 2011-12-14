@@ -51,7 +51,7 @@ Player Abilities
 learned before 3rd rank. Can only have up to 3 total abilities.
 
 1st Rank Abilities:
-    Dash L1 (Learning: 10, Use: 2): Can move 3 squares in any direction.
+    Dash (Learning: 10, Use: 2): Can move 4 squares in any direction.
 
     Attack (Learning: 10, Use: 1): Moving onto a plant has a 100% to kill the
     plant.
@@ -59,8 +59,7 @@ learned before 3rd rank. Can only have up to 3 total abilities.
     Wall Walk (Learning: 10, Use: 5): Can move in walls.
 
 2nd Rank Abilities:
-    Dash L2 (Learning: 20, Use: 3): Can move 5 squares in any direction.
-    *Requires Dash L1*
+    Plant Hop (Learning: 30, Use: 2): Can hop over plants. *Requires Dash*
 
     Wall Hop (Learning: 30, Use: 1): Can hop over walls. *Requires Attack*
 
@@ -68,8 +67,8 @@ learned before 3rd rank. Can only have up to 3 total abilities.
     direction. *Requires Wall Walk*
 
 3rd Rank Abilities:
-    Dash L3 (Learning: 40, Use: 5): Can move 7 squares in any direction.
-    *Requires Dash L2*
+    Repellent (Learning: 60, Use: 10): Creates repellent in a 5x5 area around
+    the player that lasts 10 turns. *Requires Plant Hop*
 
     Life (Learning: 60, Use: 50): If you were to die from a plant growth and
     have enough energy you live, but lose the energy. *Requires Wall Hop*
