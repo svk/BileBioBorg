@@ -16,28 +16,32 @@ You can use energy to learn abilities (up to three) that may help you escape.
 There are three kinds of plants which have different rules for growth:
 
 Roots (%).
-    Roots are rare and probably spred the quickest even though they can only
-    grow once before becoming "stale"*. The root grows like so:
+    Roots are the largest threat in BileBio. They can grow in giant burts or
+    create more roots near the player. The burst pattern looks like:
         ~
        ~*~
       ~*%*~
        ~*~
         ~
-    After the root becomes stale it can still grow by tossing another root
-    anywhere on the map the player (or plant) isn't located.
+    The root, after becoming active, has a 10% to spawn another root somewhere
+    near the player, and a 90% to burst. Roots grow the slowest.
 
 Flowers (*).
-    Flowers can grow up to 4 times. The can grow another flower in a L pattern.
+    Flowers can grow up to 2 times. The can grow another flower (75%) or a vine
+    (25%). They grow in a chess knight pattern, and grow slightly slower than
+    Vines.
        ~ ~
       ~   ~
         *
       ~   ~
        ~ ~
 Vines (~).
-    Vines can grow up to 2 times. They grow either another vine (75%), or a
-    flower (25%) right next to them in the eight cardinal directions.
+    Vines can grow up to 2 times. They can only grow other vines right next to
+    themselves. Vines grow slightly faster than Flowers.
 
-* Stale means the plant has used up it's main method of growing.
+Nectar ($)
+    Collect this to gain score and energy. It has a half-life of about 40 turns
+    so get there quick!
 
 ================
 Player Abilities
@@ -46,48 +50,42 @@ Player Abilities
 1st rank must be learned before 2nd rank, 2nd rank must be
 learned before 3rd rank. Can only have up to 3 total abilities.
 
-Agility
--------
-1st (Learning: 10, Use: 2)
-Can move 3 squares in any direction.
+1st Rank Abilities:
+    Dash L1 (Learning: 10, Use: 2): Can move 3 squares in any direction.
 
-2nd (Learning: 20, Use: 3)
-Can move 5 squares in any direction.
+    Attack (Learning: 10, Use: 1): Moving onto a plant has a 100% to kill the
+    plant.
 
-3rd (Learning: 40, Use: 5)
-Can move 7 squares in any direction.
+    Wall Walk (Learning: 10, Use: 5): Can move in walls.
 
-Strength
---------
-1st (Learning: 10, Use: 1)
-Moving onto a plant will kill the plant instantly.
+2nd Rank Abilities:
+    Dash L2 (Learning: 20, Use: 3): Can move 5 squares in any direction.
+    *Requires Dash L1*
 
-2nd (Learning: 30, Use: 1)
-Can hop over walls.
+    Wall Hop (Learning: 30, Use: 1): Can hop over walls. *Requires Attack*
 
-3rd (Learning: 60, Use: 10)
-If you were to die from a plant growth and have enough energy
-you live, but lose the energy.
+    Spawn Wall (Learning: 30, Use: 5): Can create a wall in any moveable
+    direction. *Requires Wall Walk*
 
-Intelligence
-------------
-1st (Learning: 10, Use: 5)
-Can move in walls.
+3rd Rank Abilities:
+    Dash L3 (Learning: 40, Use: 5): Can move 7 squares in any direction.
+    *Requires Dash L2*
 
-2nd (Learning: 30, Use: 5)
-Can create a wall in any moveable direction.
+    Life (Learning: 60, Use: 50): If you were to die from a plant growth and
+    have enough energy you live, but lose the energy. *Requires Wall Hop*
 
-3rd (Learning: 60, Use: 0)
-Energy recieved from nectar is tripled.
+    Energy (Learning: 60, Use: 0): Energy recieved from nectar is tripled.
+    *Requires Spawn Wall*
+
 
 ========
 Controls
 ========
 
-Vi-keys for movements. To select an ability press 0-9, 0 is the default
-move action. An ability will be red if you don't know it and you can
-press space to buy it, granted you have enough energy.
-        
+Vi-keys (or numpad) for movements. To select an ability press 0-9, 0 is the
+default move action. An ability will be red if you don't know it and you can
+press space to learn it, granted you have enough energy.
+
 h       Move right.
 j       Move down.
 k       Move up.

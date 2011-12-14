@@ -66,10 +66,10 @@ enum {
     ABILITY_DASH5,
     ABILITY_DASH7,
     ABILITY_ATTACK,
-    ABILITY_HOP,
+    ABILITY_WALL_HOP,
     ABILITY_LIFE,
-    ABILITY_WALL_MOVE,
-    ABILITY_CREATE_WALL,
+    ABILITY_WALL_WALK,
+    ABILITY_SPAWN_WALL,
     ABILITY_ENERGY,
     NUM_ABILITIES
 };
@@ -80,10 +80,10 @@ const char *ability_names[] = {
     "Dash L2",
     "Dash L3",
     "Attack",
-    "Hop",
+    "Wall Hop",
     "Life",
-    "Wall Move",
-    "Create Wall",
+    "Wall Walk",
+    "Spawn Wall",
     "Energy",
 };
 
@@ -642,12 +642,12 @@ int use_ability(struct bilebio *bb, int dx, int dy)
         }
         return move_player(bb, bb->player_x + dx, bb->player_y + dy);
 
-    case ABILITY_HOP:
-        if (bb->abilities[ABILITY_HOP] && bb->player_energy >= ability_costs[ABILITY_HOP].recurring) {
+    case ABILITY_WALL_HOP:
+        if (bb->abilities[ABILITY_WALL_HOP] && bb->player_energy >= ability_costs[ABILITY_WALL_HOP].recurring) {
             if (IN_STAGE(bb->player_x + dx, bb->player_y + dy) &&
                 bb->stage[bb->player_y + dy][bb->player_x + dx].type == TILE_WALL &&
                 !is_obstructed(bb, bb->player_x + (dx * 2), bb->player_y + (dy * 2))) {
-                bb->player_energy -= ability_costs[ABILITY_HOP].recurring;
+                bb->player_energy -= ability_costs[ABILITY_WALL_HOP].recurring;
                 return move_player(bb, bb->player_x + (dx * 2), bb->player_y + (dy * 2));
             }
         }
@@ -655,11 +655,11 @@ int use_ability(struct bilebio *bb, int dx, int dy)
 
     /* ABILITY_LIFE isn't used. */
 
-    case ABILITY_WALL_MOVE:
-        if (bb->abilities[ABILITY_WALL_MOVE] && bb->player_energy >= ability_costs[ABILITY_WALL_MOVE].recurring) {
+    case ABILITY_WALL_WALK:
+        if (bb->abilities[ABILITY_WALL_WALK] && bb->player_energy >= ability_costs[ABILITY_WALL_WALK].recurring) {
             if (IN_STAGE(bb->player_x + dx, bb->player_y + dy) &&
                 bb->stage[bb->player_y + dy][bb->player_x + dx].type == TILE_WALL) {
-                bb->player_energy -= ability_costs[ABILITY_WALL_MOVE].recurring;
+                bb->player_energy -= ability_costs[ABILITY_WALL_WALK].recurring;
 
                 bb->stage[bb->player_y][bb->player_x] = bb->under_player;
                 bb->player_x += dx;
@@ -675,7 +675,7 @@ int use_ability(struct bilebio *bb, int dx, int dy)
             }
         }
         /* Can't let the player just stand in a wall forever. */
-        else if (bb->player_energy < ability_costs[ABILITY_WALL_MOVE].recurring &&
+        else if (bb->player_energy < ability_costs[ABILITY_WALL_WALK].recurring &&
                  IN_STAGE(bb->player_x + dx, bb->player_y + dy) &&
                  bb->stage[bb->player_y + dy][bb->player_x + dx].type == TILE_PLAYER) {
             return 0;
@@ -684,11 +684,11 @@ int use_ability(struct bilebio *bb, int dx, int dy)
 
     /* ABILITY_ENERGY isn't used. */
 
-    case ABILITY_CREATE_WALL:
-        if (bb->abilities[ABILITY_CREATE_WALL] && bb->player_energy >= ability_costs[ABILITY_CREATE_WALL].recurring) {
+    case ABILITY_SPAWN_WALL:
+        if (bb->abilities[ABILITY_SPAWN_WALL] && bb->player_energy >= ability_costs[ABILITY_SPAWN_WALL].recurring) {
             if (IN_STAGE(bb->player_x + dx, bb->player_y + dy) &&
                 bb->stage[bb->player_y + dy][bb->player_x + dx].type == TILE_FLOOR) {
-                bb->player_energy -= ability_costs[ABILITY_CREATE_WALL].recurring;
+                bb->player_energy -= ability_costs[ABILITY_SPAWN_WALL].recurring;
 
                 bb->stage[bb->player_y + dy][bb->player_x + dx] = make_tile(TILE_WALL);
                 return 1;
