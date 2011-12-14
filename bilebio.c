@@ -525,7 +525,7 @@ void age_tile(struct bilebio *bb, struct tile *t)
         t->age++;
         if (((t->age + 1) % 40) == 0)
             t->growth = t->growth / 2;
-        if (t->growth)
+        if (t->growth <= 1)
             *t = TILE_FRESH_ROOT();
     }
     else if (t->type == TILE_REPELLENT) {
