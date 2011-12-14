@@ -95,7 +95,7 @@ const struct {
     {10, 2},
     {20, 3},
     {40, 5},
-    {10, 0},
+    {10, 2},
     {30, 1},
     {60, 10},
     {10, 5},
@@ -527,7 +527,9 @@ int is_obstructed(struct bilebio *bb, int x, int y)
     if (bb->stage[y][x].type != TILE_FLOOR &&
         bb->stage[y][x].type != TILE_EXIT &&
         bb->stage[y][x].type != TILE_NECTAR &&
-        bb->stage[y][x].type != TILE_PLAYER)
+        bb->stage[y][x].type != TILE_PLAYER &&
+        bb->stage[y][x].type != TILE_VINE &&
+        bb->stage[y][x].type != TILE_FLOWER)
         return 1;
 
     return 0;
@@ -563,6 +565,14 @@ int move_player(struct bilebio *bb, int x, int y)
         
         set_stage(bb);
         return 0; /* Unsuccessful move. (Don't update) */
+    }
+    else if (bb->stage[y][x].type == TILE_VINE ||
+             bb->stage[y][x].type == TILE_FLOWER) {
+        /* 50% chance of success. */
+        if (ONEIN(2))
+            bb->stage[y][x] = make_tile(TILE_FLOOR);
+        else
+            return 1; /* Don't move but still update. */
     }
     else if (bb->stage[y][x].type == TILE_PLAYER) {
         return 1;
@@ -627,10 +637,7 @@ int use_ability(struct bilebio *bb, int dx, int dy)
                 /* Can't attack roots. */
                 bb->stage[bb->player_y + dy][bb->player_x + dx].type != TILE_ROOT) {
                 bb->player_energy -= ability_costs[ABILITY_ATTACK].recurring;
-                /* 50% chance of success. */
-                if (ONEIN(2))
-                    bb->stage[bb->player_y + dy][bb->player_x + dx] = make_tile(TILE_FLOOR);
-                return 1;
+                bb->stage[bb->player_y + dy][bb->player_x + dx] = make_tile(TILE_FLOOR);
             }
         }
         return move_player(bb, bb->player_x + dx, bb->player_y + dy);
