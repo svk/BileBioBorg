@@ -170,7 +170,7 @@ int main(void)
         for (y = 0; y < STAGE_HEIGHT; ++y)
             for (x = 0; x < STAGE_WIDTH; ++x)
                 mvaddch(y, x, tile_display(bb.stage[y][x]));
-        set_status(0, RED, "You died! You finished the game with a score of %d!\n", bb.player_score);
+        set_status(0, RED, "You died on stage %d! You finished the game with a score of %d!\n", bb.stage_level, bb.player_score);
         set_status(1, BLUE, "Press 'Q' to quit.", bb.player_score);
         while ((i = getch()) != 'Q')
             ;
