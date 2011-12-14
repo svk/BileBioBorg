@@ -252,8 +252,8 @@ void set_stage(struct bilebio *bb)
 
     /* Populate the stage. */
     num_roots = bb->stage_level * 2 + 1;
-    tries = 10;
     while (num_roots-- > 0) {
+        tries = 20;
         while (tries-- > 0) {
             x = RANDINT(STAGE_WIDTH);
             y = RANDINT(STAGE_HEIGHT);
