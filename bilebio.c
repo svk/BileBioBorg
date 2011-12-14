@@ -36,6 +36,12 @@ enum status {
                              (t).type == TILE_FLOWER || \
                              (t).type == TILE_ROOT)
 
+#define ROOT_ACTIVE_BASE        20
+#define FLOWER_ACTIVE_BASE      15
+#define VINE_ACTIVE_BASE        10
+/* Chance = (l+b-1) / (b^2), where b = base chance and l = stage level. */
+#define ACTIVE_CHANCE(base, level)   (ONEIN(((base)*(base))/((level)+(base)-1)))
+
 enum {
     TILE_FLOOR,
     TILE_WALL,
@@ -259,6 +265,8 @@ void set_stage(struct bilebio *bb)
             y = RANDINT(STAGE_HEIGHT);
             if (bb->stage[y][x].type == TILE_FLOOR) {
                 bb->stage[y][x] = TILE_FRESH_ROOT();
+                if (ONEIN(100 / bb->stage_level))
+                    bb->stage[y][x].active = 1;
                 break;
             }
         }
@@ -422,7 +430,7 @@ enum status update_bilebio(struct bilebio *bb)
                         tile->active = 0;
                     }
                     else
-                        if (ONEIN(20))
+                        if (ACTIVE_CHANCE(ROOT_ACTIVE_BASE, bb->stage_level))
                             tile->active = 1;
                     break;
                 case TILE_FLOWER:
@@ -446,7 +454,7 @@ enum status update_bilebio(struct bilebio *bb)
                     }
                     else
                         /* Cannot activate when stale. */
-                        if (ONEIN(15) && tile->growth > 0)
+                        if (ACTIVE_CHANCE(FLOWER_ACTIVE_BASE, bb->stage_level) && tile->growth > 0)
                             tile->active = 1;
                     break;
                 case TILE_VINE:
@@ -459,7 +467,7 @@ enum status update_bilebio(struct bilebio *bb)
                     }
                     else
                         /* Cannot activate when stale. */
-                        if (ONEIN(10) && tile->growth > 0)
+                        if (ACTIVE_CHANCE(VINE_ACTIVE_BASE, bb->stage_level) && tile->growth > 0)
                             tile->active = 1;
                     break;
                 default: break;
@@ -542,7 +550,7 @@ int move_player(struct bilebio *bb, int x, int y)
 
     if (bb->stage[y][x].type == TILE_NECTAR) {
         /* Increase score. */
-        bb->player_score *= 1.1;
+        bb->player_score += bb->player_energy += bb->stage[y][x].growth * 8;
         /* Add energy. */
         if (bb->abilities[ABILITY_ENERGY])
             bb->player_energy += bb->stage[y][x].growth * 3;
