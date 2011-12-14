@@ -97,7 +97,7 @@ const struct {
     {40, 5},
     {10, 2},
     {30, 1},
-    {60, 10},
+    {60, 50},
     {10, 5},
     {30, 5},
     {60, 0},
@@ -263,7 +263,7 @@ void set_stage(struct bilebio *bb)
             }
         }
     }
-    
+
     bb->num_nectars_placed = 0;
     bb->under_player = make_tile(TILE_FLOOR);
     bb->stage_age = 0;
@@ -476,7 +476,7 @@ enum status update_bilebio(struct bilebio *bb)
                 ry = RANDINT(STAGE_HEIGHT);
             } while (!try_to_place(bb, 0, &tries, rx, ry, TILE_FRESH_NECTAR()));
         }
-        
+
         bb->stage_age++;
     }
 
@@ -553,16 +553,16 @@ int move_player(struct bilebio *bb, int x, int y)
     else if (bb->stage[y][x].type == TILE_EXIT) {
         bb->player_score += bb->stage_level * 100;
         bb->stage_level++;
-        
+
         if (bb->stage_age < 160) {
-            bb->player_energy += 16;
+            bb->player_energy += 8;
             bb->player_score += bb->stage_level * 10;
         }
         else if (bb->stage_age < 320) {
-            bb->player_energy += 8;
+            bb->player_energy += 4;
             bb->player_score += bb->stage_level * 5;
         }
-        
+
         set_stage(bb);
         return 0; /* Unsuccessful move. (Don't update) */
     }
