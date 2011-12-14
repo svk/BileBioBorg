@@ -480,7 +480,7 @@ enum status update_bilebio(struct bilebio *bb)
         }
 
         /* Update random map stuff... like nectar! */
-        if (ONEIN(80) && bb->num_nectars_placed++ < 10) {
+        if (ONEIN(160) && bb->num_nectars_placed++ < 10) {
             tries = 10;
             do {
                 rx = RANDINT(STAGE_WIDTH);
@@ -525,8 +525,8 @@ void age_tile(struct bilebio *bb, struct tile *t)
         t->age++;
         if (((t->age + 1) % 40) == 0)
             t->growth = t->growth / 2;
-        if (t->growth < 1)
-            t->growth = 1;
+        if (t->growth)
+            *t = TILE_FRESH_ROOT();
     }
     else if (t->type == TILE_REPELLENT) {
         t->age++;
@@ -730,7 +730,8 @@ int try_to_place(struct bilebio *bb, int deadly, int *tries, int x, int y, struc
                 return 1; /* Break out. */
             }
         }
-        else if (bb->stage[y][x].type == TILE_FLOOR) {
+        else if (bb->stage[y][x].type == TILE_FLOOR ||
+                 TILE_IS_PLANT(bb->stage[y][x])) {
             bb->stage[y][x] = t;
         }
     }
