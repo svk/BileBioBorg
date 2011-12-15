@@ -482,10 +482,15 @@ enum status update_bilebio(struct bilebio *bb)
         /* Update random map stuff... like nectar! */
         if (ONEIN(160) && bb->num_nectars_placed++ < 10) {
             tries = 10;
-            do {
+            while (tries-- > 0) {
                 rx = RANDINT(STAGE_WIDTH);
                 ry = RANDINT(STAGE_HEIGHT);
-            } while (!try_to_place(bb, 0, &tries, rx, ry, TILE_FRESH_NECTAR()));
+                if (IN_STAGE(rx, ry) &&
+                    (bb->stage[y][x].type == TILE_FLOOR ||
+                    TILE_IS_PLANT(bb->stage[y][x]))) {
+                    bb->stage[y][x] = TILE_FRESH_NECTAR();
+                }
+            }
         }
 
         bb->stage_age++;
@@ -606,7 +611,7 @@ int move_player(struct bilebio *bb, int x, int y)
 int use_ability(struct bilebio *bb, int dx, int dy)
 {
     int x, y;
-    
+
     switch (bb->selected_ability) {
     /* ABILITY_MOVE covered by default. */
 
@@ -730,8 +735,7 @@ int try_to_place(struct bilebio *bb, int deadly, int *tries, int x, int y, struc
                 return 1; /* Break out. */
             }
         }
-        else if (bb->stage[y][x].type == TILE_FLOOR ||
-                 TILE_IS_PLANT(bb->stage[y][x])) {
+        else if (bb->stage[y][x].type == TILE_FLOOR) {
             bb->stage[y][x] = t;
         }
     }
