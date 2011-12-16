@@ -4,6 +4,8 @@
 #include "bilebio.h"
 
 void initialize_borg( struct bilebio * );
+void quit_borg();
 int borg_move();
+void borg_print(const char*);
 
 #endif

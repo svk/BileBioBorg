@@ -69,6 +69,10 @@ int main(void)
     echo();
     endwin();
 
+#ifdef RUN_BORG
+    quit_borg();
+#endif
+
     return 0;
 }
 
@@ -308,6 +312,8 @@ enum status update_bilebio(struct bilebio *bb)
                             } while (!try_to_place(bb, 0, &tries, rx, ry, TILE_FRESH_ROOT()));
                         }
                         else {
+                            borg_print( "root attack" );
+
                             try_to_place(bb, 1, NULL, x - 2, y, TILE_FRESH_VINE());
                             try_to_place(bb, 1, NULL, x - 1, y, TILE_FRESH_FLOWER());
                             try_to_place(bb, 1, NULL, x + 1, y, TILE_FRESH_FLOWER());
@@ -334,12 +340,14 @@ enum status update_bilebio(struct bilebio *bb)
                 case TILE_FLOWER:
                     if (tile->active) {
                         if (ONEIN(4)) {
+                            borg_print( "flower attack 1" );
                             r = RANDINT(8);
                             rx = x + knight_pattern[r][0];
                             ry = y + knight_pattern[r][1];
                             try_to_place(bb, 1, NULL, rx, ry, TILE_FRESH_VINE());
                         }
                         else {
+                            borg_print( "flower attack 2" );
                             r = RANDINT(8);
                             rx = x + knight_pattern[r][0];
                             ry = y + knight_pattern[r][1];
@@ -357,6 +365,7 @@ enum status update_bilebio(struct bilebio *bb)
                     break;
                 case TILE_VINE:
                     if (tile->active) {
+                            borg_print( "vine attack" );
                         rx = x + RANDINT(3) - 1;
                         ry = y + RANDINT(3) - 1;
                         try_to_place(bb, 1, NULL, rx, ry, TILE_FRESH_VINE());
@@ -372,6 +381,10 @@ enum status update_bilebio(struct bilebio *bb)
                 }
                 age_tile(bb, tile);
             }
+        }
+
+        if( bb->player_dead ) {
+            borg_print( "player killed" );
         }
 
         /* Update random map stuff... like nectar! */
