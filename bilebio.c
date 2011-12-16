@@ -312,8 +312,6 @@ enum status update_bilebio(struct bilebio *bb)
                             } while (!try_to_place(bb, 0, &tries, rx, ry, TILE_FRESH_ROOT()));
                         }
                         else {
-                            borg_print( "root attack" );
-
                             try_to_place(bb, 1, NULL, x - 2, y, TILE_FRESH_VINE());
                             try_to_place(bb, 1, NULL, x - 1, y, TILE_FRESH_FLOWER());
                             try_to_place(bb, 1, NULL, x + 1, y, TILE_FRESH_FLOWER());
@@ -340,14 +338,12 @@ enum status update_bilebio(struct bilebio *bb)
                 case TILE_FLOWER:
                     if (tile->active) {
                         if (ONEIN(4)) {
-                            borg_print( "flower attack 1" );
                             r = RANDINT(8);
                             rx = x + knight_pattern[r][0];
                             ry = y + knight_pattern[r][1];
                             try_to_place(bb, 1, NULL, rx, ry, TILE_FRESH_VINE());
                         }
                         else {
-                            borg_print( "flower attack 2" );
                             r = RANDINT(8);
                             rx = x + knight_pattern[r][0];
                             ry = y + knight_pattern[r][1];
@@ -365,7 +361,6 @@ enum status update_bilebio(struct bilebio *bb)
                     break;
                 case TILE_VINE:
                     if (tile->active) {
-                            borg_print( "vine attack" );
                         rx = x + RANDINT(3) - 1;
                         ry = y + RANDINT(3) - 1;
                         try_to_place(bb, 1, NULL, rx, ry, TILE_FRESH_VINE());
@@ -381,10 +376,6 @@ enum status update_bilebio(struct bilebio *bb)
                 }
                 age_tile(bb, tile);
             }
-        }
-
-        if( bb->player_dead ) {
-            borg_print( "player killed" );
         }
 
         /* Update random map stuff... like nectar! */
@@ -678,3 +669,196 @@ void set_status(int row, chtype color, const char *fmt, ...)
     attroff(color);
 }
 
+enum status simulate_bilebio(struct bilebio *bb, int move)
+{
+    int ch;
+    int x, y, rx, ry, r;
+    struct tile *tile;
+    int tries;
+    int successful_move = 0;
+    struct tile temp_stage[STAGE_HEIGHT][STAGE_WIDTH];
+    int knight_pattern[8][2] = {
+        {-2, -1},
+        { 2, -1},
+        {-2,  1},
+        { 2,  1},
+
+        {-1, -2},
+        {-1,  2},
+        { 1, -2},
+        { 1,  2},
+    };
+
+    ch = move;
+
+    switch (ch) {
+    case 'Q': return 0;
+    case 'h': case KEY_LEFT: successful_move = use_ability(bb, -1, 0); break;
+    case 'j': case KEY_DOWN: successful_move = use_ability(bb, 0, 1); break;
+    case 'k': case KEY_UP: successful_move = use_ability(bb, 0, -1); break;
+    case 'l': case KEY_RIGHT: successful_move = use_ability(bb, 1, 0); break;
+    case 'y': case KEY_A1: successful_move = use_ability(bb, -1, -1); break;
+    case 'u': case KEY_A3: successful_move = use_ability(bb, 1, -1); break;
+    case 'b': case KEY_C1: successful_move = use_ability(bb, -1, 1); break;
+    case 'n': case KEY_C3: successful_move = use_ability(bb, 1, 1); break;
+    case '.': case KEY_B2: successful_move = use_ability(bb, 0, 0); break;
+    case '0':
+        /* Fall through. */
+    case '1':
+        /* Fall through. */
+    case '2':
+        /* Fall through. */
+    case '3':
+        /* Fall through. */
+    case '4':
+        /* Fall through. */
+    case '5':
+        /* Fall through. */
+    case '6':
+        /* Fall through. */
+    case '7':
+        /* Fall through. */
+    case '8':
+        /* Fall through. */
+    case '9':
+        bb->selected_ability = ch - '0';
+        break;
+    case ' ':
+        rx = 0; /* Sum. Lol, reuse variables. */
+        for (r = 1; r < NUM_ABILITIES; ++r)
+            rx += bb->abilities[r];
+        if (rx < 3 &&
+            bb->player_energy >= ability_costs[bb->selected_ability].initial &&
+            !bb->abilities[bb->selected_ability]) {
+            /* Check prerequisites. */
+            if ((bb->selected_ability == 2 ||
+                bb->selected_ability == 3 ||
+                bb->selected_ability == 5 ||
+                bb->selected_ability == 6 ||
+                bb->selected_ability == 8 ||
+                bb->selected_ability == 9) &&
+                bb->abilities[bb->selected_ability - 1]) {
+
+                bb->player_energy -= ability_costs[bb->selected_ability].initial;
+                bb->abilities[bb->selected_ability] = 1;
+            }
+            else if ((bb->selected_ability == 1 ||
+                     bb->selected_ability == 4 ||
+                     bb->selected_ability == 7)) {
+                bb->player_energy -= ability_costs[bb->selected_ability].initial;
+                bb->abilities[bb->selected_ability] = 1;
+            }
+        }
+        break;
+    default: break;
+    }
+
+    if (successful_move) {
+        /* Update the plants. */
+        memcpy(temp_stage, bb->stage, sizeof(bb->stage));
+        for (y = 0; y < STAGE_HEIGHT; ++y) {
+            for (x = 0; x < STAGE_WIDTH; ++x) {
+                tile = &bb->stage[y][x];
+                /* We check from temp_stage, rather than bb->stage because
+                 * bb->stage will change, and we don't want the new guys
+                 * growing. */
+                switch (temp_stage[y][x].type) {
+                case TILE_ROOT:
+                    if (tile->active) {
+                        if (ONEIN(5)) {
+                            tries = 10;
+                            do {
+                                /* Prefer places close to the player. */
+                                rx = bb->player_x + RANDINT(10) - 5;
+                                ry = bb->player_y + RANDINT(40) - 20;
+                            } while (!try_to_place(bb, 0, &tries, rx, ry, TILE_FRESH_ROOT()));
+                        }
+                        else {
+                            try_to_place(bb, 1, NULL, x - 2, y, TILE_FRESH_VINE());
+                            try_to_place(bb, 1, NULL, x - 1, y, TILE_FRESH_FLOWER());
+                            try_to_place(bb, 1, NULL, x + 1, y, TILE_FRESH_FLOWER());
+                            try_to_place(bb, 1, NULL, x + 2, y, TILE_FRESH_VINE());
+
+
+                            try_to_place(bb, 1, NULL, x, y - 2, TILE_FRESH_VINE());
+                            try_to_place(bb, 1, NULL, x, y - 1, TILE_FRESH_FLOWER());
+                            try_to_place(bb, 1, NULL, x, y + 1, TILE_FRESH_FLOWER());
+                            try_to_place(bb, 1, NULL, x, y + 2, TILE_FRESH_VINE());
+
+
+                            try_to_place(bb, 1, NULL, x + 1, y + 1, TILE_FRESH_VINE());
+                            try_to_place(bb, 1, NULL, x - 1, y - 1, TILE_FRESH_VINE());
+                            try_to_place(bb, 1, NULL, x - 1, y + 1, TILE_FRESH_VINE());
+                            try_to_place(bb, 1, NULL, x + 1, y - 1, TILE_FRESH_VINE());
+                        }
+                        tile->active = 0;
+                    }
+                    else
+                        if (ACTIVE_CHANCE(ROOT_ACTIVE_BASE, bb->stage_level))
+                            tile->active = 1;
+                    break;
+                case TILE_FLOWER:
+                    if (tile->active) {
+                        if (ONEIN(4)) {
+                            r = RANDINT(8);
+                            rx = x + knight_pattern[r][0];
+                            ry = y + knight_pattern[r][1];
+                            try_to_place(bb, 1, NULL, rx, ry, TILE_FRESH_VINE());
+                        }
+                        else {
+                            r = RANDINT(8);
+                            rx = x + knight_pattern[r][0];
+                            ry = y + knight_pattern[r][1];
+                            try_to_place(bb, 1, NULL, rx, ry, TILE_FRESH_FLOWER());
+                            /* Only placing another flower uses a growth. */
+                            tile->growth--;
+                        }
+
+                        tile->active = 0;
+                    }
+                    else
+                        /* Cannot activate when stale. */
+                        if (ACTIVE_CHANCE(FLOWER_ACTIVE_BASE, bb->stage_level) && tile->growth > 0)
+                            tile->active = 1;
+                    break;
+                case TILE_VINE:
+                    if (tile->active) {
+                        rx = x + RANDINT(3) - 1;
+                        ry = y + RANDINT(3) - 1;
+                        try_to_place(bb, 1, NULL, rx, ry, TILE_FRESH_VINE());
+                        tile->growth--;
+                        tile->active = 0;
+                    }
+                    else
+                        /* Cannot activate when stale. */
+                        if (ACTIVE_CHANCE(VINE_ACTIVE_BASE, bb->stage_level) && tile->growth > 0)
+                            tile->active = 1;
+                    break;
+                default: break;
+                }
+                age_tile(bb, tile);
+            }
+        }
+
+        /* Update random map stuff... like nectar! */
+        if (ONEIN(160) && bb->num_nectars_placed++ < 10) {
+            tries = 10;
+            while (tries-- > 0) {
+                rx = RANDINT(STAGE_WIDTH);
+                ry = RANDINT(STAGE_HEIGHT);
+                if (IN_STAGE(rx, ry) &&
+                    (bb->stage[y][x].type == TILE_FLOOR ||
+                    TILE_IS_PLANT(bb->stage[y][x]))) {
+                    bb->stage[y][x] = TILE_FRESH_NECTAR();
+                }
+            }
+        }
+
+        bb->stage_age++;
+    }
+
+    if (bb->player_dead)
+        return STATUS_DEAD;
+
+    return STATUS_ALIVE;
+}

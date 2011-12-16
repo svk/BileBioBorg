@@ -117,4 +117,6 @@ int try_to_place(struct bilebio *bb, int deadly, int *tries, int x, int y, struc
 
 void set_status(int row, chtype color, const char *fmt, ...);
 
+enum status simulate_bilebio(struct bilebio *bb, int move);
+
 #endif
