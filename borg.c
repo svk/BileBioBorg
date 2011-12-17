@@ -3,8 +3,29 @@
 static struct bilebio * world = 0;
 
 FILE *borg_log = 0;
+int borg_move_sober( struct bilebio * );
 
 #define MAX_ONE_IN 100
+
+#define FILTER( filter_things, filter_no_things, filter_exp ) { \
+    for(int filter_i=0;filter_i<filter_no_things;) { \
+        if( filter_exp( filter_things[filter_i] ) ) { \
+            filter_i++; \
+        } else { \
+            memmove( &filter_things[filter_i], &filter_things[filter_i+1], (filter_no_things-(filter_i+1)) * sizeof filter_things[0] ); \
+            --filter_no_things; \
+        } \
+    } \
+}
+
+#define MAXIMIZE( maximize_xs, maximize_n, maximize_exp, maximize_type, maximize_varg ) { \
+    for(int maximize_i=0;maximize_i<maximize_n;maximize_i++) { \
+        maximize_type maximize_v = maximize_exp( maximize_xs[maximize_i] ); \
+        if( maximize_v > maximize_varg ) { \
+            maximize_varg = maximize_v; \
+        } \
+    } \
+}
 
 double logp_one_in[MAX_ONE_IN];
 double logp_complement_of_one_in[MAX_ONE_IN];
@@ -121,9 +142,11 @@ void quit_borg() {
 }
 
 void print_cell( struct tile *t ) {
-    fprintf( borg_log, "%c", ( ((int)tile_display( *t )) & A_CHARTEXT) );
+    fprintf( borg_log, "%c", (int) ( ((int)tile_display( *t )) & A_CHARTEXT) );
     if( t->active ) {
         fprintf( borg_log, "!" );
+    } else {
+        fprintf( borg_log, " " );
     }
 }
 
@@ -161,10 +184,19 @@ double log_survival_at( struct tile (*map)[STAGE_WIDTH], int x, int y ) {
     return log_survival;
 }
 
-int mc_survival_game( struct bilebio * holodeck ) {
+int mc_survival_game( struct bilebio * holodeck, int (*f)(struct bilebio *) ) {
     for(int i=0;i<10;i++) {
-        if( simulate_bilebio( holodeck, borg_move_primitive(holodeck) ) == STATUS_DEAD ) return 0;
+        if( simulate_bilebio( holodeck, f(holodeck) ) == STATUS_DEAD ) return 0;
     }
+    return 1;
+}
+
+int mc_survival_or_energy_loss_game( struct bilebio * holodeck, int (*f)(struct bilebio*) ) {
+    unsigned int energy = holodeck->player_energy;
+    for(int i=0;i<10;i++) {
+        if( simulate_bilebio( holodeck, f(holodeck) ) == STATUS_DEAD ) return 0;
+    }
+    if( holodeck->player_energy < energy ) return 0;
     return 1;
 }
 
@@ -174,7 +206,7 @@ double mc_survival_rate( struct bilebio * ctx, int initial_move ) {
     for(int i=0;i<total;i++) {
         memcpy( &holodeck, ctx, sizeof holodeck );
         simulate_bilebio( &holodeck, initial_move );
-        wins += mc_survival_game( &holodeck );
+        wins += mc_survival_or_energy_loss_game( &holodeck, borg_move_sober );
     }
     return wins / (double) total;
 }
@@ -193,9 +225,9 @@ void borg_move_candidates( struct bilebio *ctx, int *candidates, int *no_candida
         struct tile * t = &ctx->stage[y][x];
         if( is_obstructed( ctx, x, y ) && t->type != TILE_EXIT ) continue;
 
-/*      // the "dodger" style avoided stepping on plants
+        // If we want to step on plants, we must accurately calculate the risk involved!
         if( t->type == TILE_VINE || t->type == TILE_FLOWER ) continue;
-*/
+
 
         double log_survival = log_survival_at( ctx->stage, x, y );
         if( log_survival > best_log_survival ) {
@@ -208,12 +240,45 @@ void borg_move_candidates( struct bilebio *ctx, int *candidates, int *no_candida
     }
 }
 
+void borg_postmortem() {
+    fprintf( borg_log, "Died @ %d,%d with %lusc/%luen at stage %lu\n", world->player_x, world->player_y, world->player_score, world->player_energy, world->stage_level );
+    for(int y=0;y<STAGE_HEIGHT;y++) {
+        for(int x=0;x<STAGE_WIDTH;x++) {
+            int ch = ( ((int)tile_display( world->stage[y][x] )) & A_CHARTEXT);
+            fprintf( borg_log, "%c", ch );
+        }
+        fprintf( borg_log, "\n" );
+    }
+}
+
+void build_move_map( struct bilebio *ctx, int *candidates, int no_candidates, int xs[256], int ys[256] ) {
+    for(int i=0;i<no_candidates;i++) {
+        int x = ctx->player_x, y = ctx->player_y;
+        switch( candidates[i] ) {
+            case 'y': --y; --x; break;
+            case 'k': --y; break;
+            case 'u': --y; ++x; break;
+            case 'b': ++y; --x; break;
+            case 'j': ++y; break;
+            case 'n': ++y; ++x; break;
+            case 'h': --x; break;
+            case 'l': ++x; break;
+        }
+        xs[ candidates[i] ] = x;
+        ys[ candidates[i] ] = y;
+    }
+}
+
 int borg_move() {
     const int sz = 16;
     int candidates[sz];
     int no_candidates;
     borg_move_candidates( world, candidates, &no_candidates );
     double wisdoms[sz];
+
+    fprintf( borg_log, "== DECISION ==\n" );
+
+    calculate_desirability( world );
 
     double best_chance = -1;
     for(int j=0;j<no_candidates;j++) {
@@ -239,37 +304,42 @@ int borg_move() {
         fflush( borg_log );
     }
 
-    int xs[sz], ys[sz];
+    int xs[256], ys[256];
+
+    double max_desirability = 0;
+
+    build_move_map( world, candidates, no_candidates, xs, ys );
 
     for(int i=0;i<no_candidates;i++) {
-        int x = world->player_x, y = world->player_y;
-        switch( candidates[i] ) {
-            case 'y': --y; --x; break;
-            case 'k': --y; break;
-            case 'u': --y; ++x; break;
-            case 'b': ++y; --x; break;
-            case 'j': ++y; break;
-            case 'n': ++y; ++x; break;
-            case 'h': --x; break;
-            case 'l': ++x; break;
-        }
-        xs[i] = x;
-        ys[i] = y;
+        double des = desirability_map[ ys[ candidates[i] ] ][ xs[ candidates[ i ] ] ];
+        fprintf( borg_log, "desirability of %lf [%d,%d] (%c)\n", des, xs[candidates[i]], ys[candidates[i]], candidates[i] );
     }
 
-    calculate_desirability( world );
+#define F(i) ( desirability_map[ys[i]][xs[i]] )
+    MAXIMIZE( candidates, no_candidates, F, double, max_desirability );
+#undef F
+#define F(i) ( desirability_map[ys[i]][xs[i]] == max_desirability )
+    FILTER( candidates, no_candidates, F )
+#undef F
 
-    double best_desirability = 0;
-    int rv;
-
+    int rv = rand() % no_candidates;
     for(int i=0;i<no_candidates;i++) {
-        double des = desirability_map[ ys[i] ][ xs[i] ];
-        fprintf( borg_log, "desirability of %lf [%d,%d] (%c)\n", des, xs[i], ys[i], candidates[i] );
-        if( des > best_desirability ) {
-            best_desirability = des;
-            rv = i;
-        }
+        fprintf( borg_log, "Candidate %c\n", candidates[i] );
     }
+    fprintf( borg_log, "Selected %c\n", candidates[rv] );
+
+    for(int j=-3;j<=3;j++) {
+        for(int i=-3;i<=3;i++) {
+            const int x = world->player_x + i, y = world->player_y + j; 
+            if( x < 0 || y < 0 || x >= STAGE_WIDTH || y >= STAGE_HEIGHT ) continue;
+            print_cell( &world->stage[y][x] );
+        }
+        fprintf( borg_log, "\n" );
+    }
+
+    fprintf( borg_log, "\n" );
+    fprintf( borg_log, "== MOVE: %c ==\n", candidates[rv] );
+    fflush( borg_log );
 
     return candidates[rv];
 }
@@ -282,6 +352,31 @@ int borg_move_primitive( struct bilebio * ctx ) {
     if( !no_candidates ) {
         return '.';
     }
+    int key = candidates[rand() % no_candidates];
+    return key;
+}
+
+int borg_move_sober( struct bilebio * ctx ) {
+    int candidates[16];
+    int no_candidates;
+    borg_move_candidates( ctx, candidates, &no_candidates );
+    int xs[256], ys[256];
+
+    build_move_map( ctx, candidates, no_candidates, xs, ys );
+
+    double max_desirability = 0;
+#define F(i) ( desirability_map[ys[i]][xs[i]] )
+    MAXIMIZE( candidates, no_candidates, F, double, max_desirability );
+#undef F
+#define F(i) ( desirability_map[ys[i]][xs[i]] == max_desirability )
+    FILTER( candidates, no_candidates, F )
+#undef F
+
+    if( !no_candidates ) {
+        fprintf( borg_log, "no_candidates situation, max des is %lf\n", max_desirability );
+        return '.';
+    }
+
     int key = candidates[rand() % no_candidates];
     return key;
 }

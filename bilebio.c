@@ -61,9 +61,13 @@ int main(void)
         for (y = 0; y < STAGE_HEIGHT; ++y)
             for (x = 0; x < STAGE_WIDTH; ++x)
                 mvaddch(y, x, tile_display(bb.stage[y][x]));
+#ifndef RUN_BORG
         set_status(0, RED, "You died on stage %d! You finished the game with a score of %d!\n", bb.stage_level, bb.player_score);
         set_status(1, BLUE, "Press 'Q' to quit.", bb.player_score);
         while ((i = getch()) != 'Q');
+#else
+        borg_postmortem();
+#endif
     }
 
     echo();
@@ -71,6 +75,11 @@ int main(void)
 
 #ifdef RUN_BORG
     quit_borg();
+    {
+        FILE *f = fopen( "borg.current.data", "a" );
+        fprintf( f, "%lu\t%lu\t%lu\n", bb.player_score, bb.stage_level, bb.player_energy );
+        fclose( f );
+    }
 #endif
 
     return 0;
